@@ -216,6 +216,15 @@ public sealed class CddaArmorSection
     [JsonPropertyName("encumbrance")]
     public CddaScalarRange? Encumbrance { get; set; }
 
+    [JsonPropertyName("layers")]
+    public List<string>? Layers { get; set; }
+
+    [JsonPropertyName("encumbrance_modifiers")]
+    public List<string>? EncumbranceModifiers { get; set; }
+
+    [JsonPropertyName("cover_vitals")]
+    public decimal? CoverVitals { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
@@ -239,6 +248,36 @@ public sealed class CddaPocket
 
     [JsonPropertyName("watertight")]
     public bool? Watertight { get; set; }
+
+    [JsonPropertyName("moves")]
+    public int? Moves { get; set; }
+
+    [JsonPropertyName("max_item_length")]
+    public CddaScalar? MaxItemLength { get; set; }
+
+    [JsonPropertyName("description")]
+    public CddaText? Description { get; set; }
+
+    [JsonPropertyName("flag_restriction")]
+    public List<string>? FlagRestriction { get; set; }
+
+    [JsonPropertyName("item_restriction")]
+    public List<string>? ItemRestriction { get; set; }
+
+    [JsonPropertyName("volume_encumber_modifier")]
+    public decimal? VolumeEncumberModifier { get; set; }
+
+    [JsonPropertyName("holster")]
+    public bool? Holster { get; set; }
+
+    [JsonPropertyName("magazine_well")]
+    public CddaScalar? MagazineWell { get; set; }
+
+    [JsonPropertyName("transparent")]
+    public bool? Transparent { get; set; }
+
+    [JsonPropertyName("ablative")]
+    public bool? Ablative { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }

@@ -101,6 +101,37 @@ Shared values use eager System.Text.Json converters:
 
 Other supported top-level DTOs remain: SkillDefinition, MaterialDefinition, ItemCategoryDefinition, AmmunitionTypeDefinition, RecipeDefinition and MonsterDefinition. Unknown definitions use UnknownDefinition.
 
+## Item schema coverage and validation
+
+The automated [schema-coverage workflow](.github/workflows/schema-coverage.yml) scans a **pinned** version of
+[LambdaSix/Cataclysm-DDA](https://github.com/LambdaSix/Cataclysm-DDA) (commit `e262adb299a7613b4aedc5f12c08fe0413c56a84`).
+It inventories field names, observed shapes, subtype frequency and missing nested DTO fields.
+
+- [Baseline coverage report](reports/item-schema-coverage.baseline.md): 85.4% of authored top-level ITEM field occurrences mapped to a DTO property.
+- [Post-expansion coverage report](reports/item-schema-coverage.after.md): 96.9% of authored top-level ITEM field occurrences mapped.
+- Real-data validation: **489/489 JSON files and 10,525/10,525 definitions parsed** successfully from the pinned `data/json/items` directory.
+
+The percentage measures **declared field-name mapping**, not semantic correctness or inheritance resolution.
+The probe verifies that all the pinned core item files deserialize without exceptions.
+Mods and other areas of the game data tree are not part of this particular probe.
+
+Common item fields now eagerly typed include `melee_damage`, both representations of `to_hit`,
+`variants`, `use_action`/`tick_action`/`drop_action`, `ranged_damage`, `looks_like`, `longest_side`,
+`replace_materials`, `techniques`, `faults`, `conditional_names`, and nested armour/pocket properties.
+Gun modes and mod slots, ammunition/shot damage with barrel-length curves, numeric or unit-bearing
+vitamins, and tuple/object tool qualities have dedicated DTOs/converters.
+
+To reproduce against a local copy of the fork:
+
+~~~bash
+python3 tools/schema_coverage.py --data-dir /path/to/Cataclysm-DDA/data/json/items \
+  --model-dir src/OpenCatasharpData/Models --output artifacts/item-schema-coverage.md
+dotnet run --project tests/OpenCatasharpData.SmokeTests -c Release -- \
+  --scan-dir /path/to/Cataclysm-DDA/data/json/items
+~~~
+
+See [coverage scanner guidance](tools/SCHEMA_COVERAGE.md) for caveats and re-baselining.
+
 ## Scope and limitations
 
 - This reads **raw source definitions**, not final resolved game data. copy-from, extend, delete, relative, and proportional are preserved but **not applied**.
