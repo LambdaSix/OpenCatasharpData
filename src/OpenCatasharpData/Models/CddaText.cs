@@ -4,30 +4,38 @@ using System.Text.Json.Serialization;
 namespace OpenCatasharpData.Models;
 
 /// <summary>
-/// CDDA translatable text: either a JSON string or an object containing
-/// str, str_sp, str_pl and/or ctxt. Raw JSON is retained for round-tripping.
+/// CDDA translatable text. Singular, Plural and Context are extracted eagerly
+/// when JSON is read; the original value is also retained for lossless writing.
 /// </summary>
 [JsonConverter(typeof(CddaTextJsonConverter))]
 public sealed class CddaText
 {
-    internal CddaText(JsonElement raw) => Raw = raw.Clone();
+    internal CddaText(JsonElement raw)
+    {
+        Raw = raw.Clone();
+
+        if (raw.ValueKind == JsonValueKind.String)
+        {
+            Singular = raw.GetString();
+        }
+        else
+        {
+            Singular = GetString(raw, "str") ?? GetString(raw, "str_sp");
+            Plural = GetString(raw, "str_pl") ?? GetString(raw, "str_sp");
+            Context = GetString(raw, "ctxt");
+        }
+    }
 
     public JsonElement Raw { get; }
+    public string? Singular { get; }
+    public string? Plural { get; }
+    public string? Context { get; }
 
-    public string? Singular =>
-        Raw.ValueKind == JsonValueKind.String
-            ? Raw.GetString()
-            : GetString("str") ?? GetString("str_sp");
-
-    public string? Plural => GetString("str_pl") ?? GetString("str_sp");
-
-    public string? Context => GetString("ctxt");
-
-    private string? GetString(string key) =>
-        Raw.ValueKind == JsonValueKind.Object
-        && Raw.TryGetProperty(key, out var value)
-        && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
+    private static string? GetString(JsonElement value, string key) =>
+        value.ValueKind == JsonValueKind.Object
+        && value.TryGetProperty(key, out var property)
+        && property.ValueKind == JsonValueKind.String
+            ? property.GetString()
             : null;
 
     public override string ToString() => Singular ?? string.Empty;
@@ -40,17 +48,12 @@ public sealed class CddaTextJsonConverter : JsonConverter<CddaText>
         Type typeToConvert,
         JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.Null)
-        {
-            return null;
-        }
+        if (reader.TokenType == JsonTokenType.Null) return null;
 
         using var document = JsonDocument.ParseValue(ref reader);
         var raw = document.RootElement;
         if (raw.ValueKind is not (JsonValueKind.String or JsonValueKind.Object))
-        {
             throw new JsonException("CDDA text must be a string or translation object.");
-        }
 
         return new CddaText(raw);
     }

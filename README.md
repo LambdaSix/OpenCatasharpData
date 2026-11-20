@@ -1,71 +1,114 @@
 # OpenCatasharpData
 
-A small .NET 10 class library for reading **Cataclysm: Dark Days Ahead** (CDDA) data JSON using **System.Text.Json**.
-
-The initial goal is to read definitions from [LambdaSix/Cataclysm-DDA](https://github.com/LambdaSix/Cataclysm-DDA), expose useful typed DTOs, and preserve fields that have not been modeled yet.
+A small **.NET 10** class library for eagerly parsing [Cataclysm: Dark Days Ahead](https://github.com/LambdaSix/Cataclysm-DDA) definition JSON into typed C# DTOs using **System.Text.Json**, without third-party runtime dependencies.
 
 ## Getting started
 
-Requires the .NET 10 SDK. The library has no third-party runtime dependencies.
+Requires the .NET 10 SDK.
 
 ~~~bash
 dotnet build OpenCatasharpData.slnx
 dotnet run --project tests/OpenCatasharpData.SmokeTests
 ~~~
 
-Reference the library project from an application:
+### Parse one record
 
-~~~xml
-<ProjectReference Include="../OpenCatasharpData/src/OpenCatasharpData/OpenCatasharpData.csproj" />
+~~~csharp
+using OpenCatasharpData.Parsing;
+using OpenCatasharpData.Models;
+
+CddaDefinition definition = CddaRecordParser.Default.Parse(
+    """{"type":"ITEM","subtypes":["COMESTIBLE"],"id":"apple","calories":95}""");
+
+var food = (ComestibleItemDefinition)definition;
+Console.WriteLine($"{food.IdString}: {food.Calories}");
 ~~~
 
-Read a file:
+Single-record overloads accept UTF-8 bytes and JsonElement too. Known fields are converted to typed values at deserialization time.
+
+### Load files or a complete directory
 
 ~~~csharp
 using OpenCatasharpData;
 using OpenCatasharpData.Models;
 
+// A file is typically an array of source definitions.
 var definitions = await CddaJsonLoader.LoadFileAsync(
-    "/path/to/Cataclysm-DDA/data/json/skills.json");
+    "/path/to/Cataclysm-DDA/data/json/items/generic.json");
 
-foreach (var skill in definitions.OfType<SkillDefinition>())
-{
-    Console.WriteLine($"{skill.IdString}: {skill.Name?.Singular}");
-}
+// Fully materialise and index a recursively loaded directory.
+CddaDataCatalog catalog = await CddaJsonLoader.LoadDirectoryCatalogAsync(
+    "/path/to/Cataclysm-DDA/data/json/items");
+
+IReadOnlyList<ComestibleItemDefinition> foods = catalog.Get<ComestibleItemDefinition>();
+IReadOnlyList<LoadedDefinition> matches = catalog.FindById("apple_cider");
+
+// Or stream one file at a time.
+await foreach (var record in CddaJsonLoader.LoadDirectoryAsync(
+    "/path/to/Cataclysm-DDA/data/json/items"))
+    Console.WriteLine($"{record.Definition.IdString} in {record.FilePath}");
 ~~~
 
-Read a directory recursively (one JSON file at a time):
+Duplicate IDs remain visible in FindById, allowing later mod/patch resolution.
+
+### Register an independent parser handler
+
+Handlers implement ICddaDefinitionHandler and are tried in registration order. The generic JsonDefinitionHandler<T> requires only a predicate and a DTO type:
 
 ~~~csharp
-await foreach (var entry in CddaJsonLoader.LoadDirectoryAsync(
-    "/path/to/Cataclysm-DDA/data/json"))
-{
-    Console.WriteLine($"{entry.Definition.Type}: {entry.Definition.IdString} ({entry.FilePath})");
-}
+using OpenCatasharpData.Parsing;
+using OpenCatasharpData.Models;
+
+var parser = new CddaRecordParser([
+    new JsonDefinitionHandler<MyDefinition>(json =>
+        CddaDefaultHandlers.TypeIs(json, "MY_CUSTOM_TYPE")),
+    .. CddaDefaultHandlers.Create()
+]);
+
+// Pass the same parser into either single-record parsing or the loaders.
+var catalog = await CddaJsonLoader.LoadDirectoryCatalogAsync(
+    "/path/to/data/json", parser: parser);
+
+// MyDefinition must inherit CddaDefinition.
 ~~~
 
-## Current typed definitions
+No loader changes are necessary to register new handlers or new DTO types.
 
-- SkillDefinition (type: skill), including level descriptions
-- MaterialDefinition (type: material)
-- ItemCategoryDefinition (type: ITEM_CATEGORY)
-- AmmunitionTypeDefinition (type: ammunition_type)
-- ItemDefinition for common item type discriminators (ITEM, GENERIC, ARMOR, TOOL, GUN, AMMO, COMESTIBLE, BOOK, GUNMOD, MAGAZINE, BATTERY)
-- RecipeDefinition (type: recipe)
-- MonsterDefinition (type: MONSTER)
-- UnknownDefinition for anything else
+## Typed item models
 
-All definitions inherit common fields from CddaDefinition. The **type** discriminator selects a DTO, regardless of source filename. Unmodeled properties are retained in AdditionalProperties through JsonExtensionData. Fields with multiple shapes can be kept as JsonElement rather than guessed at.
+CDDA uses a top-level discriminator of type=ITEM with a subtypes array rather than always using item subtype names in type. Handlers select the **first recognised subtype in source order**, ignoring unknown subtype names. The base ItemDefinition contains shared and composite-item properties such as armor, pocket_data and ammo_type.
 
-The CDDA name/description format may be a string or an object (for example, {"str":"social"} or {"str_sp":"software"}). CddaText handles both forms without losing the original JSON.
+| DTO | CDDA subtype | Selected eager properties |
+|---|---|---|
+| GenericItemDefinition | no recognised subtype | name, material, weight, volume, flags, qualities |
+| ArmorItemDefinition | ARMOR | armor coverage, encumbrance, material layers, warmth |
+| ComestibleItemDefinition | COMESTIBLE | calories, quench, fun, vitamins, spoilage |
+| ToolItemDefinition | TOOL | charges and charge consumption |
+| GunItemDefinition | GUN | skill, dispersion, handling, reload, durability |
+| AmmoItemDefinition | AMMO | count, stack size, casing, range |
+| MagazineItemDefinition | MAGAZINE | capacity, ammo types, reload time, pockets |
+| BookItemDefinition | BOOK | skill, intelligence, chapters, reading time |
+| GunModItemDefinition | GUNMOD | location, targets, modifiers, installation time |
+
+Shared values use eager System.Text.Json converters:
+
+- CddaText for string or translatable-object names
+- CddaScalar for numeric or unit-bearing string values
+- CddaMaterialPart for string and object material entries
+- CddaNamedAmount for qualities and vitamins
+- CddaArmorSection and CddaPocket for nested typed objects
+- String or string-array ammunition types as List<string>
+
+Other supported top-level DTOs remain: SkillDefinition, MaterialDefinition, ItemCategoryDefinition, AmmunitionTypeDefinition, RecipeDefinition and MonsterDefinition. Unknown definitions use UnknownDefinition.
 
 ## Scope and limitations
 
-This project loads **source definitions**, not the fully resolved in-game content database. It does **not** yet apply copy-from inheritance, abstract expansion, extend, delete, relative, or proportional patches. Those source properties are preserved for later processing.
-
-Input files are expected to be JSON arrays of typed objects, as described in the [CDDA JSON documentation](https://docs.cataclysmdda.org/JSON/JSON_INFO.html). The loader supports trailing commas and JSON comments; CDDA's comment-like properties such as "//" are retained as ordinary JSON fields.
-
-A sensible next step is to add a resolver and validation tests using representative fixtures from the fork, then expand DTO coverage by category.
+- This reads **raw source definitions**, not final resolved game data. copy-from, extend, delete, relative, and proportional are preserved but **not applied**.
+- A composite item has one concrete DTO, determined by the first recognised subtype; its full subtype list and common equipment facets remain typed. Additional subtype-specific fields not yet modelled remain in AdditionalProperties.
+- Unmodelled fields are preserved via JsonExtensionData. Known model fields are eagerly deserialized only once, as the record is read.
+- Unit strings (e.g. 68 g or 15 m) are captured as CddaScalar objects; physical-unit arithmetic and normalization are not implemented.
+- Files are expected to contain arrays of definitions. Directory enumeration processes files in path order and returns source paths.
+- Tests use reduced, representative source records from the fork. **The entire data tree has not yet been exhaustively validated.**
 
 ## License
 

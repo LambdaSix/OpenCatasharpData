@@ -75,37 +75,6 @@ public sealed class AmmunitionTypeDefinition : CddaDefinition
     public string? DefaultItem { get; set; }
 }
 
-/// <summary>
-/// Common item properties only. Subtype-specific shapes are kept in
-/// AdditionalProperties until dedicated DTOs are introduced.
-/// </summary>
-public sealed class ItemDefinition : CddaDefinition
-{
-    [JsonPropertyName("name")]
-    public CddaText? Name { get; set; }
-
-    [JsonPropertyName("description")]
-    public CddaText? Description { get; set; }
-
-    [JsonPropertyName("category")]
-    public string? Category { get; set; }
-
-    [JsonPropertyName("weight")]
-    public JsonElement? Weight { get; set; }
-
-    [JsonPropertyName("volume")]
-    public JsonElement? Volume { get; set; }
-
-    [JsonPropertyName("price")]
-    public JsonElement? Price { get; set; }
-
-    [JsonPropertyName("material")]
-    public JsonElement? Material { get; set; }
-
-    [JsonPropertyName("flags")]
-    public JsonElement? Flags { get; set; }
-}
-
 public sealed class RecipeDefinition : CddaDefinition
 {
     [JsonPropertyName("result")]
