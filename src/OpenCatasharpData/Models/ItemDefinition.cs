@@ -53,6 +53,65 @@ public class ItemDefinition : CddaDefinition
     [JsonPropertyName("pocket_data")]
     public List<CddaPocket>? PocketData { get; set; }
 
+    // Common properties intentionally belong to the base class: in CDDA an
+    // ITEM may have multiple subtypes, or no declared subtype at all.
+    [JsonPropertyName("looks_like")]
+    public string? LooksLike { get; set; }
+
+    [JsonPropertyName("longest_side")]
+    public CddaScalar? LongestSide { get; set; }
+
+    [JsonPropertyName("barrel_length")]
+    public CddaScalar? BarrelLength { get; set; }
+
+    [JsonPropertyName("display_type")]
+    public string? DisplayType { get; set; }
+
+    [JsonPropertyName("ascii_picture")]
+    public string? AsciiPicture { get; set; }
+
+    [JsonPropertyName("phase")]
+    public string? Phase { get; set; }
+
+    [JsonPropertyName("variant_type")]
+    public string? VariantType { get; set; }
+
+    [JsonPropertyName("variants")]
+    public List<CddaItemVariant>? Variants { get; set; }
+
+    [JsonPropertyName("melee_damage")]
+    public CddaMeleeDamage? MeleeDamage { get; set; }
+
+    [JsonPropertyName("to_hit")]
+    public CddaToHit? ToHit { get; set; }
+
+    [JsonPropertyName("use_action")]
+    [JsonConverter(typeof(CddaUseActionsJsonConverter))]
+    public List<CddaUseAction>? UseActions { get; set; }
+
+    [JsonPropertyName("ranged_damage")]
+    [JsonConverter(typeof(CddaDamageListJsonConverter))]
+    public List<CddaDamage>? RangedDamage { get; set; }
+
+    [JsonPropertyName("weapon_category")]
+    public List<string>? WeaponCategories { get; set; }
+
+    [JsonPropertyName("conditional_names")]
+    public List<CddaConditionalName>? ConditionalNames { get; set; }
+
+    [JsonPropertyName("faults")]
+    public List<CddaFault>? Faults { get; set; }
+
+    [JsonPropertyName("tool_ammo")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? ToolAmmo { get; set; }
+
+    [JsonPropertyName("charges")]
+    public int? Charges { get; set; }
+
+    [JsonPropertyName("environmental_protection")]
+    public decimal? EnvironmentalProtection { get; set; }
+
     [JsonPropertyName("ammo_type")]
     [JsonConverter(typeof(CddaStringListConverter))]
     public List<string>? AmmoTypes { get; set; }
@@ -128,6 +187,16 @@ public sealed class GunItemDefinition : ItemDefinition
     [JsonPropertyName("handling")]
     public int? Handling { get; set; }
 
+    [JsonPropertyName("modes")]
+    public List<CddaGunMode>? Modes { get; set; }
+
+    [JsonPropertyName("valid_mod_locations")]
+    [JsonConverter(typeof(CddaNamedAmountsConverter))]
+    public List<CddaNamedAmount>? ValidModLocations { get; set; }
+
+    [JsonPropertyName("clip_size")]
+    public int? ClipSize { get; set; }
+
     [JsonPropertyName("ammo")]
     [JsonConverter(typeof(CddaStringListConverter))]
     public List<string>? Ammo { get; set; }
@@ -135,6 +204,18 @@ public sealed class GunItemDefinition : ItemDefinition
 
 public sealed class AmmoItemDefinition : ItemDefinition
 {
+    [JsonPropertyName("damage")]
+    public CddaDamage? Damage { get; set; }
+
+    [JsonPropertyName("shot_damage")]
+    public CddaDamage? ShotDamage { get; set; }
+
+    [JsonPropertyName("projectile_count")]
+    public int? ProjectileCount { get; set; }
+
+    [JsonPropertyName("dispersion")]
+    public int? Dispersion { get; set; }
+
     [JsonPropertyName("count")]
     public int? Count { get; set; }
 
