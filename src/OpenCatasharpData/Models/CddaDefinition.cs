@@ -3,21 +3,19 @@ using System.Text.Json.Serialization;
 
 namespace OpenCatasharpData.Models;
 
-/// <summary>
-/// Raw CDDA definition. The JSON ID can be a string or a more complex shape,
-/// depending on the type, so the original value is preserved.
-/// </summary>
+/// <summary>Common raw definition metadata, including source inheritance directives.</summary>
 public abstract class CddaDefinition
 {
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
 
+    // Some CDDA kinds use array/object IDs. Retain the original shape.
     [JsonPropertyName("id")]
     public JsonElement? Id { get; set; }
 
+    /// <summary>String ID captured eagerly by the record parser.</summary>
     [JsonIgnore]
-    public string? IdString =>
-        Id is { ValueKind: JsonValueKind.String } id ? id.GetString() : null;
+    public string? IdString { get; internal set; }
 
     [JsonPropertyName("abstract")]
     public string? Abstract { get; set; }
@@ -41,7 +39,7 @@ public abstract class CddaDefinition
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
 
-/// <summary>A definition with a discriminator not yet mapped to a typed DTO.</summary>
+/// <summary>Source definition not matched by a registered handler.</summary>
 public sealed class UnknownDefinition : CddaDefinition
 {
 }
