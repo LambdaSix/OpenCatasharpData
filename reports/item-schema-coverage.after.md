@@ -1,7 +1,7 @@
 # CDDA Item Schema Coverage
 
 Source: `LambdaSix/Cataclysm-DDA` at `e262adb299a7613b4aedc5f12c08fe0413c56a84`.
-DTO reference: `OpenCatasharpData` at `4743e098d582607c2b52e7cec95bcf6a59af107c`.
+DTO reference: `OpenCatasharpData` at `fb0c8ceb9bfbd86a40d68f1008fde85bf69fee7b`.
 Scope: core `data/json/items/**/*.json` (not mods). Counts describe authored source records, not resolved game entities.
 
 ## Inventory
