@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/OpenCatasharpData/OpenCatasharpData.csproj" />
+  <Project Path="tests/OpenCatasharpData.SmokeTests/OpenCatasharpData.SmokeTests.csproj" />
+</Solution>
