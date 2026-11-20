@@ -1,0 +1,54 @@
+name: CDDA item schema coverage
+
+on:
+  push:
+    paths:
+      - 'tools/schema_coverage.py'
+      - 'tools/test_schema_coverage.py'
+      - '.github/workflows/schema-coverage.yml'
+      - 'src/OpenCatasharpData/Models/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout OpenCatasharpData
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned CDDA fork (items only)
+        uses: actions/checkout@v4
+        with:
+          repository: LambdaSix/Cataclysm-DDA
+          ref: e262adb299a7613b4aedc5f12c08fe0413c56a84
+          path: cdda-fork
+          sparse-checkout: |
+            data/json/items
+          sparse-checkout-cone-mode: true
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Test coverage scanner
+        run: python3 -m unittest discover -s tools -p 'test_schema_coverage.py'
+
+      - name: Generate report
+        run: |
+          python3 tools/schema_coverage.py \
+            --data-dir cdda-fork/data/json/items \
+            --model-dir src/OpenCatasharpData/Models \
+            --source-revision e262adb299a7613b4aedc5f12c08fe0413c56a84 \
+            --model-revision "$GITHUB_SHA" \
+            --output artifacts/item-schema-coverage.md
+          cat artifacts/item-schema-coverage.md >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/item-schema-coverage.md
+
+      - name: Upload schema report
+        uses: actions/upload-artifact@v4
+        with:
+          name: item-schema-coverage
+          path: artifacts/item-schema-coverage.md
+          retention-days: 90
