@@ -1,7 +1,7 @@
 # CDDA Item Schema Coverage
 
 Source: `LambdaSix/Cataclysm-DDA` at `e262adb299a7613b4aedc5f12c08fe0413c56a84`.
-DTO reference: `OpenCatasharpData` at `08e2a7287e15d801918894a04e92b9df7abce66a`.
+DTO reference: `OpenCatasharpData` at `4743e098d582607c2b52e7cec95bcf6a59af107c`.
 Scope: core `data/json/items/**/*.json` (not mods). Counts describe authored source records, not resolved game entities.
 
 ## Inventory
@@ -10,7 +10,7 @@ Scope: core `data/json/items/**/*.json` (not mods). Counts describe authored sou
 - All records in those files: **10,525**
 - Records with `type: ITEM`: **10,280**
 - Unique top-level ITEM field names: **228**
-- Authored top-level field occurrences with matching DTO property: **134,489/140,675 (95.6%)**
+- Authored top-level field occurrences with matching DTO property: **136,313/140,675 (96.9%)**
 
 This is *declared-property coverage*, not a runtime deserialization pass or deep-schema coverage. Counts exclude comment-like keys beginning with //; unknown fields remain preserved by JsonExtensionData.
 
@@ -55,41 +55,41 @@ This is *declared-property coverage*, not a runtime deserialization pass or deep
 
 | Field | ITEM records | Observed shapes | Example record |
 |---|---:|---|---|
-| `replace_materials` | 460 | object (460) | `armor/arms_armor.json:chainmail_junk_arms` |
-| `techniques` | 294 | array (294) | `armor/arms_armor.json:2byarm_guard` |
-| `read_skill` | 197 | string (197) | `book/abstract.json:book_nonf_hard_cook_tpl` |
-| `revert_to` | 178 | string (178) | `armor/bespoke_armor/custom_bodysuits.json:armor_nomad_advanced_on` |
 | `healthy` | 178 | number (178) | `biosignatures.json:feces_bird` |
 | `difficulty` | 149 | number (149) | `bionics.json:bio_adrenaline` |
 | `smoking_result` | 148 | string (148) | `comestibles/carnivore.json:froglegs` |
 | `material_thickness` | 146 | number (1049) | `armor/ammo_pouch.json:ammo_pouch` |
 | `stim` | 143 | number (143) | `chemicals_and_resources.json:fungicide` |
-| `effects` | 135 | array (135) | `ammo/10mm.json:10mm_fmj` |
 | `addiction_potential` | 132 | number (132) | `comestibles/alcohol.json:wine_mycus` |
 | `addiction_type` | 119 | string (114), array (5) | `comestibles/alcohol.json:wine_mycus` |
 | `sided` | 117 | boolean (117) | `armor/ammo_pouch.json:legpouch` |
 | `freezing_point` | 116 | number (116) | `chemicals_and_resources.json:bleach` |
 | `warmth` | 115 | number (954) | `armor/ammo_pouch.json:xlkevlar` |
-| `min_skills` | 111 | array (111) | `gun/robofac_gun.json:robofac_gun_ar` |
 | `plant_name` | 107 | string (107) | `comestibles/other.json:dry_beans` |
 | `fruit` | 107 | string (107) | `comestibles/other.json:dry_beans` |
 | `growth_stages` | 107 | array (107) | `comestibles/other.json:dry_beans` |
 | `snippet_category` | 101 | string (63), array (38) | `armor/coats.json:jacket_jean` |
 | `range` | 101 | number (235) | `ammo/10mm.json:10mm_fmj` |
-| `recoil` | 92 | number (92) | `ammo/10mm.json:10mm_fmj` |
-| `loudness` | 91 | number (91) | `ammo/20shot.json:20shot_slug` |
-| `tick_action` | 89 | array (52), object (35), string (2) | `armor/bespoke_armor/custom_headgear.json:helmet_nomad` |
 | `power_draw` | 87 | string (87) | `armor/bespoke_armor/custom_bodysuits.json:armor_nomad_advanced_on` |
-| `sealed` | 83 | boolean (83) | `ammo/chemical_spray.json:gas_chloramine` |
-| `integral_volume` | 81 | string (81) | `gun/robofac_gun.json:robofac_gun_ar` |
 | `byproducts` | 75 | array (75) | `comestibles/other.json:dry_beans` |
 | `container` | 68 | string (539) | `ammo/chemical_spray.json:gas_chloramine` |
 | `into` | 66 | string (66) | `comestibles/nuts.json:pistachio_shelled` |
 | `recipe` | 66 | string (66) | `comestibles/nuts.json:pistachio_shelled` |
 | `proficiencies` | 63 | array (63) | `book/chemistry.json:adv_chemistry` |
 | `reload_noise_volume` | 63 | number (63) | `classes/gun.json:underbarrel_base` |
-| `integral_weight` | 61 | string (61) | `gun/robofac_gun.json:robofac_gun_ar` |
 | `countdown_interval` | 60 | string (60) | `armor/exotic.json:migo_plate` |
+| `seeds` | 59 | boolean (59) | `comestibles/other.json:dry_beans` |
+| `sight_dispersion` | 54 | number (54) | `classes/gun.json:gun_base_handgun_manual` |
+| `barrel_volume` | 54 | string (54) | `gun/20shot.json:savage_model_220` |
+| `integral_longest_side` | 54 | string (54) | `gun/robofac_gun.json:robofac_gun_ar` |
+| `repairs_with` | 51 | array (51) | `armor/arms_armor.json:armguard_metal` |
+| `light` | 50 | number (50) | `armor/bespoke_armor/custom_storage.json:nomad_rig_on` |
+| `loudness` | 49 | number (91) | `ammo/20shot.json:20shot_slug` |
+| `parasites` | 47 | number (47) | `comestibles/carnivore.json:flesh` |
+| `recovery_chance` | 46 | number (46) | `ammo.json:rock` |
+| `min_cycle_recoil` | 41 | number (41) | `classes/gun.json:gun_base_22_semi_pistol` |
+| `passive_effects` | 35 | array (35) | `armor/bespoke_armor/custom_bodysuits.json:armor_nomad` |
+| `add_mod` | 35 | array (35) | `gun/robofac_gun.json:robofac_gun_exodii` |
 
 ## Selected complex fields (including already modelled)
 

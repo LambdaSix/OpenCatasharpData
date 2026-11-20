@@ -120,10 +120,12 @@ Check(armor.Armor?[0].Material?[0].Thickness == 2m, "Armor material thickness");
 var food = Expect<ComestibleItemDefinition>(definitions[5], "Comestible");
 Check(food.Calories == 120m && food.Quench == 65 && food.Fun == 2, "Nutrition fields");
 Check(food.Material?[0].Portion == 100m, "Material portions");
-Check(food.Vitamins?[0] == new CddaNamedAmount("vitC", 167m), "Vitamin pairs");
+Check(food.Vitamins?[0].Name == "vitC" && food.Vitamins[0].Value.Number == 167m,
+    "Numeric vitamin pairs");
 
 var tool = Expect<ToolItemDefinition>(definitions[6], "Tool");
-Check(tool.Qualities?[1] == new CddaNamedAmount("BUTCHER", 37m), "Tool quality pairs");
+Check(tool.Qualities?[1].Id == "BUTCHER" && tool.Qualities[1].Level == 37m,
+    "Tuple-style quality records");
 
 var gun = Expect<GunItemDefinition>(definitions[7], "Gun");
 Check(gun.Dispersion == 480 && gun.Handling == 10, "Gun statistics");
@@ -300,6 +302,44 @@ Check(additionalFields.TickActions?[0].Type == "MP3_ON" &&
     additionalFields.IntegralVolume?.Text == "50 ml" &&
     additionalFields.MinimumSkills?[0].Amount == 2m,
     "Extra actions, dimensions, and skill tuples");
+
+var qualityObject = Expect<ToolItemDefinition>(CddaRecordParser.Default.Parse(
+    """
+    {
+      "type":"ITEM","id":"forge_tool","subtypes":["TOOL"],
+      "qualities":[{"id":"TEMPER","level":2,"speed":1.1},
+                   ["HAMMER",3]]
+    }
+    """), "Object quality");
+Check(qualityObject.Qualities?[0].Id == "TEMPER" &&
+    qualityObject.Qualities[0].Speed == 1.1m &&
+    qualityObject.Qualities[1].Id == "HAMMER", "Object and tuple qualities");
+
+var unitVitamins = Expect<ComestibleItemDefinition>(CddaRecordParser.Default.Parse(
+    """
+    {
+      "type":"ITEM","id":"juice","subtypes":["COMESTIBLE"],
+      "vitamins":[["vitC","83700 μg"],["iron","320 μg"],["fruit_allergen",1]]
+    }
+    """), "Unit vitamin values");
+Check(unitVitamins.Vitamins?[0].Name == "vitC" &&
+    unitVitamins.Vitamins[0].Value.Text == "83700 μg" &&
+    unitVitamins.Vitamins[2].Value.Number == 1m,
+    "Vitamin quantities are numeric or unit strings");
+
+var tupleActions = Expect<ToolItemDefinition>(CddaRecordParser.Default.Parse(
+    """
+    {
+      "type":"ITEM","id":"repairkit","subtypes":["TOOL"],
+      "use_action":["GUN_REPAIR",["CROWBAR",0],["HACKSAW",0],
+                    {"type":"repair_item","skill":"fabrication"}]
+    }
+    """), "Nested action tuples");
+Check(tupleActions.UseActions?.Count == 4 &&
+    tupleActions.UseActions[1].WasTuple &&
+    tupleActions.UseActions[1].NumericArgument == 0m &&
+    tupleActions.UseActions[3].Type == "repair_item",
+    "Mixed action tuple, string and object forms");
 
 var directory = Path.Combine(Path.GetTempPath(), "OpenCatasharpData-" + Guid.NewGuid());
 Directory.CreateDirectory(Path.Combine(directory, "nested"));

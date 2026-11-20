@@ -43,8 +43,8 @@ public class ItemDefinition : CddaDefinition
     public List<string>? Flags { get; set; }
 
     [JsonPropertyName("qualities")]
-    [JsonConverter(typeof(CddaNamedAmountsConverter))]
-    public List<CddaNamedAmount>? Qualities { get; set; }
+    [JsonConverter(typeof(CddaQualitiesJsonConverter))]
+    public List<CddaQuality>? Qualities { get; set; }
 
     // Shared so composite items retain all equipment facets as typed values.
     [JsonPropertyName("armor")]
@@ -181,8 +181,8 @@ public sealed class ComestibleItemDefinition : ItemDefinition
     public string? Container { get; set; }
 
     [JsonPropertyName("vitamins")]
-    [JsonConverter(typeof(CddaNamedAmountsConverter))]
-    public List<CddaNamedAmount>? Vitamins { get; set; }
+    [JsonConverter(typeof(CddaVitaminsJsonConverter))]
+    public List<CddaVitamin>? Vitamins { get; set; }
 }
 
 public sealed class ToolItemDefinition : ItemDefinition

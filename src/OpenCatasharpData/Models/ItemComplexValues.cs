@@ -143,6 +143,13 @@ public sealed class CddaUseAction
     [JsonPropertyName("charge_rate")]
     public CddaScalar? ChargeRate { get; set; }
 
+    /// <summary>Numeric parameter of tuple-style actions such as ["CROWBAR", 0].</summary>
+    [JsonIgnore]
+    public decimal? NumericArgument { get; internal set; }
+
+    [JsonIgnore]
+    public bool WasTuple { get; internal set; }
+
     [JsonIgnore]
     public bool WasString { get; internal set; }
 
@@ -165,8 +172,16 @@ public sealed class CddaUseActionsJsonConverter : JsonConverter<List<CddaUseActi
 
         var actions = new List<CddaUseAction>();
         if (root.ValueKind == JsonValueKind.Array)
-            foreach (var element in root.EnumerateArray())
-                actions.Add(ReadAction(element, options));
+        {
+            // Sometimes a tuple itself is the whole use_action value.
+            if (root.GetArrayLength() == 2 &&
+                root[0].ValueKind == JsonValueKind.String &&
+                root[1].ValueKind == JsonValueKind.Number)
+                actions.Add(ReadAction(root, options));
+            else
+                foreach (var element in root.EnumerateArray())
+                    actions.Add(ReadAction(element, options));
+        }
         else
             actions.Add(ReadAction(root, options));
 
@@ -178,6 +193,13 @@ public sealed class CddaUseActionsJsonConverter : JsonConverter<List<CddaUseActi
         {
             JsonValueKind.String =>
                 new CddaUseAction { Type = item.GetString(), WasString = true },
+            JsonValueKind.Array when item.GetArrayLength() == 2 =>
+                new CddaUseAction
+                {
+                    Type = item[0].GetString(),
+                    NumericArgument = item[1].GetDecimal(),
+                    WasTuple = true
+                },
             JsonValueKind.Object =>
                 item.Deserialize<CddaUseAction>(options)
                 ?? throw new JsonException("Invalid use action."),
@@ -191,6 +213,13 @@ public sealed class CddaUseActionsJsonConverter : JsonConverter<List<CddaUseActi
         foreach (var item in value)
         {
             if (item.WasString) writer.WriteStringValue(item.Type);
+            else if (item.WasTuple)
+            {
+                writer.WriteStartArray();
+                writer.WriteStringValue(item.Type);
+                writer.WriteNumberValue(item.NumericArgument ?? 0);
+                writer.WriteEndArray();
+            }
             else JsonSerializer.Serialize(writer, item, options);
         }
         writer.WriteEndArray();
