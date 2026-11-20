@@ -46,6 +46,15 @@ jobs:
           cat artifacts/item-schema-coverage.md >> "$GITHUB_STEP_SUMMARY"
           cat artifacts/item-schema-coverage.md
 
+      - name: Set up .NET 10 for real-data probe
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Probe parsing of pinned real item JSON
+        continue-on-error: true
+        run: dotnet run --project tests/OpenCatasharpData.SmokeTests -c Release -- --scan-dir cdda-fork/data/json/items
+
       - name: Upload schema report
         uses: actions/upload-artifact@v4
         with:

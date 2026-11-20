@@ -112,6 +112,36 @@ public class ItemDefinition : CddaDefinition
     [JsonPropertyName("environmental_protection")]
     public decimal? EnvironmentalProtection { get; set; }
 
+    [JsonPropertyName("replace_materials")]
+    public Dictionary<string, string>? ReplaceMaterials { get; set; }
+
+    [JsonPropertyName("techniques")]
+    public List<string>? Techniques { get; set; }
+
+    [JsonPropertyName("revert_to")]
+    public string? RevertTo { get; set; }
+
+    [JsonPropertyName("tick_action")]
+    [JsonConverter(typeof(CddaUseActionsJsonConverter))]
+    public List<CddaUseAction>? TickActions { get; set; }
+
+    [JsonPropertyName("drop_action")]
+    [JsonConverter(typeof(CddaUseActionsJsonConverter))]
+    public List<CddaUseAction>? DropActions { get; set; }
+
+    [JsonPropertyName("integral_volume")]
+    public CddaScalar? IntegralVolume { get; set; }
+
+    [JsonPropertyName("integral_weight")]
+    public CddaScalar? IntegralWeight { get; set; }
+
+    [JsonPropertyName("min_skills")]
+    [JsonConverter(typeof(CddaNamedAmountsConverter))]
+    public List<CddaNamedAmount>? MinimumSkills { get; set; }
+
+    [JsonPropertyName("sealed")]
+    public bool? Sealed { get; set; }
+
     [JsonPropertyName("ammo_type")]
     [JsonConverter(typeof(CddaStringListConverter))]
     public List<string>? AmmoTypes { get; set; }
@@ -216,6 +246,15 @@ public sealed class AmmoItemDefinition : ItemDefinition
     [JsonPropertyName("dispersion")]
     public int? Dispersion { get; set; }
 
+    [JsonPropertyName("effects")]
+    public List<string>? Effects { get; set; }
+
+    [JsonPropertyName("recoil")]
+    public decimal? Recoil { get; set; }
+
+    [JsonPropertyName("loudness")]
+    public decimal? Loudness { get; set; }
+
     [JsonPropertyName("count")]
     public int? Count { get; set; }
 
@@ -240,6 +279,9 @@ public sealed class MagazineItemDefinition : ItemDefinition
 
 public sealed class BookItemDefinition : ItemDefinition
 {
+    [JsonPropertyName("read_skill")]
+    public string? ReadSkill { get; set; }
+
     [JsonPropertyName("skill")]
     public string? Skill { get; set; }
 

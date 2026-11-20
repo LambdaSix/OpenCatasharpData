@@ -278,6 +278,29 @@ Check(detailedArmor.PocketData?[0].MaxItemLength?.Text == "30 cm" &&
     detailedArmor.PocketData[0].MagazineWell?.Text == "250 ml",
     "Typed pocket geometry and restrictions");
 
+var additionalFields = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
+    """
+    {
+      "type":"ITEM","id":"additional_fields",
+      "replace_materials":{"steel":"budget_steel_chain"},
+      "techniques":["WBLOCK_1"],
+      "revert_to":"off",
+      "tick_action":["MP3_ON"],
+      "drop_action":{"type":"transform","target":"off"},
+      "integral_volume":"50 ml","integral_weight":"2 g",
+      "min_skills":[["fabrication",2]],
+      "sealed":true
+    }
+    """), "Additional common fields");
+Check(additionalFields.ReplaceMaterials?["steel"] == "budget_steel_chain" &&
+    additionalFields.Techniques?[0] == "WBLOCK_1" &&
+    additionalFields.RevertTo == "off", "Eager replacements and techniques");
+Check(additionalFields.TickActions?[0].Type == "MP3_ON" &&
+    additionalFields.DropActions?[0].Target == "off" &&
+    additionalFields.IntegralVolume?.Text == "50 ml" &&
+    additionalFields.MinimumSkills?[0].Amount == 2m,
+    "Extra actions, dimensions, and skill tuples");
+
 var directory = Path.Combine(Path.GetTempPath(), "OpenCatasharpData-" + Guid.NewGuid());
 Directory.CreateDirectory(Path.Combine(directory, "nested"));
 try
@@ -311,6 +334,35 @@ finally
 }
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");
+
+if (args.Length == 2 && args[0] == "--scan-dir")
+{
+    var scanDirectory = Path.GetFullPath(args[1]);
+    var scannedFiles = 0;
+    var scannedDefinitions = 0;
+    var failures = 0;
+    foreach (var file in Directory.EnumerateFiles(scanDirectory, "*.json",
+                 SearchOption.AllDirectories).OrderBy(p => p, StringComparer.Ordinal))
+    {
+        try
+        {
+            var records = await CddaJsonLoader.LoadFileAsync(file);
+            scannedFiles++;
+            scannedDefinitions += records.Count;
+        }
+        catch (Exception exception)
+        {
+            failures++;
+            if (failures <= 40)
+                Console.Error.WriteLine($"{Path.GetRelativePath(scanDirectory, file)}: " +
+                                        $"{exception.GetType().Name}: {exception.Message}");
+        }
+    }
+    Console.WriteLine($"Full-fork probe: {scannedFiles} successfully parsed files, " +
+                      $"{scannedDefinitions} records, {failures} failed files.");
+    if (failures != 0) Environment.ExitCode = 1;
+}
+
 
 static T Expect<T>(CddaDefinition value, string label) where T : CddaDefinition
 {
