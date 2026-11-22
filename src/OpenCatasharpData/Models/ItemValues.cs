@@ -235,10 +235,10 @@ public sealed class CddaPocket
     public string? PocketType { get; set; }
 
     [JsonPropertyName("max_contains_volume")]
-    public CddaScalar? MaxContainsVolume { get; set; }
+    public CddaVolume? MaxContainsVolume { get; set; }
 
     [JsonPropertyName("max_contains_weight")]
-    public CddaScalar? MaxContainsWeight { get; set; }
+    public CddaMass? MaxContainsWeight { get; set; }
 
     [JsonPropertyName("ammo_restriction")]
     public Dictionary<string, int>? AmmoRestriction { get; set; }
@@ -253,7 +253,7 @@ public sealed class CddaPocket
     public int? Moves { get; set; }
 
     [JsonPropertyName("max_item_length")]
-    public CddaScalar? MaxItemLength { get; set; }
+    public CddaLength? MaxItemLength { get; set; }
 
     [JsonPropertyName("description")]
     public CddaText? Description { get; set; }
@@ -271,7 +271,7 @@ public sealed class CddaPocket
     public bool? Holster { get; set; }
 
     [JsonPropertyName("magazine_well")]
-    public CddaScalar? MagazineWell { get; set; }
+    public CddaVolume? MagazineWell { get; set; }
 
     [JsonPropertyName("transparent")]
     public bool? Transparent { get; set; }

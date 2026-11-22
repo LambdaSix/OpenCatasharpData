@@ -6,7 +6,8 @@ on:
       - 'tools/schema_coverage.py'
       - 'tools/test_schema_coverage.py'
       - '.github/workflows/schema-coverage.yml'
-      - 'src/OpenCatasharpData/Models/**'
+      - 'src/OpenCatasharpData/**'
+      - 'tests/OpenCatasharpData.SmokeTests/**'
   workflow_dispatch:
 
 permissions:

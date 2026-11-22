@@ -229,7 +229,7 @@ public sealed class CddaUseActionsJsonConverter : JsonConverter<List<CddaUseActi
 public sealed class CddaBarrelDamage
 {
     [JsonPropertyName("barrel_length")]
-    public CddaScalar? BarrelLength { get; set; }
+    public CddaLength? BarrelLength { get; set; }
 
     [JsonPropertyName("amount")]
     public decimal? Amount { get; set; }

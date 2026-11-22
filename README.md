@@ -93,13 +93,59 @@ CDDA uses a top-level discriminator of type=ITEM with a subtypes array rather th
 Shared values use eager System.Text.Json converters:
 
 - CddaText for string or translatable-object names
-- CddaScalar for numeric or unit-bearing string values
+- CddaVolume, CddaLength, CddaMass and CddaDuration for dimension-safe quantities
+- CddaScalar for values not yet classified into dedicated dimensions (including currency and power)
 - CddaMaterialPart for string and object material entries
-- CddaNamedAmount for qualities and vitamins
+- CddaQuality and CddaVitamin for mixed-shape qualities and vitamins
 - CddaArmorSection and CddaPocket for nested typed objects
 - String or string-array ammunition types as List<string>
 
 Other supported top-level DTOs remain: SkillDefinition, MaterialDefinition, ItemCategoryDefinition, AmmunitionTypeDefinition, RecipeDefinition and MonsterDefinition. Unknown definitions use UnknownDefinition.
+
+## Typed physical measurements
+
+Dimension-aware value types replace unstructured CddaScalar values where the JSON schema defines physical units. They are readonly record structs with System.Text.Json converters and eager conversions. A duration's m suffix means **minutes**, while a length's m suffix means **metres**.
+
+| Value type | Source units | Canonical quantity |
+|---|---|---|
+| CddaVolume | ml, L; supported singular/plural names | Millilitres |
+| CddaLength | mm, cm, m, km; supported singular/plural names | Millimetres |
+| CddaMass | mg, g, kg; supported singular/plural names | Milligrams |
+| CddaDuration | ms, s, turns, minutes, hours, days, weeks | Seconds |
+
+Example using loaded DTOs:
+
+~~~csharp
+using OpenCatasharpData.Models;
+using OpenCatasharpData.Parsing;
+
+var item = (GenericItemDefinition)CddaRecordParser.Default.Parse(
+    """{"type":"ITEM","id":"mug","weight":"1.5 kg","volume":"250 ml",
+        "longest_side":"15 cm"}""");
+
+decimal? weightInGrams = item.Weight?.Grams;       // 1500
+decimal? volumeInLitres = item.Volume?.Litres;     // 0.25
+decimal? lengthInMm = item.LongestSide?.Millimetres; // 150
+
+bool equals = CddaVolume.FromLitres(1m) == CddaVolume.FromMillilitres(1000m);
+~~~
+
+Other migrated fields include integral_weight/volume, nested pocket weight, volume,
+length and magazine-well dimensions, ammunition damage barrel lengths,
+ComestibleItemDefinition.SpoilsIn, BookItemDefinition.ReadingTime and
+GunModItemDefinition.InstallTime.
+
+The source spelling is preserved during JSON serialisation (for example "0.25 L"
+will not turn into "250 ml"). Values created through typed factory methods use
+canonical suffixes. An unqualified JSON number remains an unqualified number;
+its HasExplicitUnit flag is false and normalised conversions return null instead
+of guessing an implicit game unit. Unsupported or dimensionally incorrect units
+throw JsonException. Equality of explicit measurements compares their normalised
+values, so 1 L equals 1000 ml.
+
+This is an **API change**: these DTO properties now expose distinct measurement
+value types, not CddaScalar. CddaScalar remains for currency, charge rate and
+vitamin amount values until their own semantics are modelled.
 
 ## Item schema coverage and validation
 
@@ -137,7 +183,7 @@ See [coverage scanner guidance](tools/SCHEMA_COVERAGE.md) for caveats and re-bas
 - This reads **raw source definitions**, not final resolved game data. copy-from, extend, delete, relative, and proportional are preserved but **not applied**.
 - A composite item has one concrete DTO, determined by the first recognised subtype; its full subtype list and common equipment facets remain typed. Additional subtype-specific fields not yet modelled remain in AdditionalProperties.
 - Unmodelled fields are preserved via JsonExtensionData. Known model fields are eagerly deserialized only once, as the record is read.
-- Unit strings (e.g. 68 g or 15 m) are captured as CddaScalar objects; physical-unit arithmetic and normalization are not implemented.
+- Recognised physical units are normalised by their dedicated value types, but unqualified numeric fields are deliberately not assigned an implied unit. Other scalar domains (including prices and power) remain CddaScalar.
 - Files are expected to contain arrays of definitions. Directory enumeration processes files in path order and returns source paths.
 - Tests use reduced, representative source records from the fork. **The entire data tree has not yet been exhaustively validated.**
 

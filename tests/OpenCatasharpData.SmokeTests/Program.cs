@@ -105,14 +105,14 @@ Check(category.NameNoun?.Singular == "software", "str_sp translation");
 
 var generic = Expect<GenericItemDefinition>(definitions[3], "Generic item");
 Check(generic.IdString == "fire", "Item ID");
-Check(generic.Weight?.Number == 5m, "Numeric item weight");
+Check(generic.Weight?.Unit == CddaMassUnit.Unspecified && generic.Weight?.Value == 5m, "Numeric item weight");
 Check(generic.Material?.Select(m => m.Type).SequenceEqual(["wood", "steel"]) == true,
     "Materials eagerly typed");
 Check(generic.AdditionalProperties?["custom_attribute"].GetProperty("enabled").GetBoolean() == true,
     "Unmodelled fields preserved");
 
 var armor = Expect<ArmorItemDefinition>(definitions[4], "Armor");
-Check(armor.Weight?.Text == "68 g", "Unit-bearing weight");
+Check(armor.Weight?.Grams == 68m, "Unit-bearing weight");
 Check(armor.Armor?[0].Covers?.Count == 2, "Armor coverage is a typed list");
 Check(armor.Armor?[0].Encumbrance?.Maximum == 10m, "Armor encumbrance range");
 Check(armor.Armor?[0].Material?[0].Thickness == 2m, "Armor material thickness");
@@ -143,7 +143,7 @@ Check(magazine.AmmoTypes?.SequenceEqual(["9mm"]) == true, "Array ammo type");
 Check(magazine.PocketData?[0].AmmoRestriction?["9mm"] == 15, "Typed pocket data");
 
 var book = Expect<BookItemDefinition>(definitions[10], "Book");
-Check(book.ReadingTime?.Text == "15 m" && book.Chapters == 16, "Book fields");
+Check(book.ReadingTime?.Minutes == 15m && book.Chapters == 16, "Book fields");
 
 var gunmod = Expect<GunModItemDefinition>(definitions[11], "Gun mod");
 Check(gunmod.ModTargets?.SequenceEqual(["bow"]) == true, "Gun mod targets");
@@ -201,7 +201,7 @@ var fullItem = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
       "ranged_damage":{"damage_type":"bullet","amount":0}
     }
     """), "Generic complex fields");
-Check(fullItem.LooksLike == "hammer" && fullItem.LongestSide?.Text == "20 cm",
+Check(fullItem.LooksLike == "hammer" && fullItem.LongestSide?.Centimetres == 20m,
     "Common item display and dimensions");
 Check(fullItem.MeleeDamage?.Bash == 12m && fullItem.MeleeDamage.Cut == 2m,
     "Typed melee damage");
@@ -236,7 +236,7 @@ var ammoDetails = Expect<AmmoItemDefinition>(CddaRecordParser.Default.Parse(
       "projectile_count":3
     }
     """), "Detailed ammo");
-Check(ammoDetails.Damage?.Barrels?[0].BarrelLength?.Text == "25 mm" &&
+Check(ammoDetails.Damage?.Barrels?[0].BarrelLength?.Millimetres == 25m &&
     ammoDetails.Damage.Barrels[0].Amount == 18m,
     "Ammo barrel-dependent damage eagerly typed");
 Check(ammoDetails.ShotDamage?.Amount == 10m &&
@@ -274,10 +274,10 @@ var detailedArmor = Expect<ArmorItemDefinition>(CddaRecordParser.Default.Parse(
     """), "Detailed armor");
 Check(detailedArmor.Armor?[0].Layers?[0] == "BELTED" &&
     detailedArmor.Armor[0].CoverVitals == 70m, "Armor layers and vitals");
-Check(detailedArmor.PocketData?[0].MaxItemLength?.Text == "30 cm" &&
+Check(detailedArmor.PocketData?[0].MaxItemLength?.Centimetres == 30m &&
     detailedArmor.PocketData[0].Moves == 100 &&
     detailedArmor.PocketData[0].ItemRestriction?[0] == "candle" &&
-    detailedArmor.PocketData[0].MagazineWell?.Text == "250 ml",
+    detailedArmor.PocketData[0].MagazineWell?.Millilitres == 250m,
     "Typed pocket geometry and restrictions");
 
 var additionalFields = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
@@ -299,7 +299,7 @@ Check(additionalFields.ReplaceMaterials?["steel"] == "budget_steel_chain" &&
     additionalFields.RevertTo == "off", "Eager replacements and techniques");
 Check(additionalFields.TickActions?[0].Type == "MP3_ON" &&
     additionalFields.DropActions?[0].Target == "off" &&
-    additionalFields.IntegralVolume?.Text == "50 ml" &&
+    additionalFields.IntegralVolume?.Millilitres == 50m &&
     additionalFields.MinimumSkills?[0].Amount == 2m,
     "Extra actions, dimensions, and skill tuples");
 
@@ -372,6 +372,8 @@ finally
 {
     Directory.Delete(directory, recursive: true);
 }
+
+MeasurementSmoke.Run();
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");
 
