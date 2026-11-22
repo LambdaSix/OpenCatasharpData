@@ -109,7 +109,7 @@ Dimension-aware value types replace unstructured CddaScalar values where the JSO
 | Value type | Source units | Canonical quantity |
 |---|---|---|
 | CddaVolume | ml, L; supported singular/plural names | Millilitres |
-| CddaLength | mm, cm, m; supported singular/plural names | Millimetres |
+| CddaLength | mm, cm, m, km; supported singular/plural names | Millimetres |
 | CddaMass | mg, g, kg; supported singular/plural names | Milligrams |
 | CddaDuration | ms, s, turns, minutes, hours, days, weeks | Seconds |
 

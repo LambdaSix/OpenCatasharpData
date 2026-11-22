@@ -99,6 +99,8 @@ public sealed class CddaLengthJsonConverter : JsonConverter<CddaLength>
                 CddaLengthUnit.Centimetres,
             "m" or "meter" or "meters" or "metre" or "metres" =>
                 CddaLengthUnit.Metres,
+            "km" or "kilometer" or "kilometers" or "kilometre" or "kilometres" =>
+                CddaLengthUnit.Kilometres,
             "" => CddaLengthUnit.Unspecified,
             _ => throw CddaUnitReader.Unsupported("length", suffix)
         };

@@ -7,7 +7,7 @@ namespace OpenCatasharpData.Models;
 public enum CddaVolumeUnit { Unspecified, Millilitres, Litres }
 
 /// <summary>Source unit for a length; Unspecified represents a bare JSON number.</summary>
-public enum CddaLengthUnit { Unspecified, Millimetres, Centimetres, Metres }
+public enum CddaLengthUnit { Unspecified, Millimetres, Centimetres, Metres, Kilometres }
 
 /// <summary>Source unit for a mass; Unspecified represents a bare JSON number.</summary>
 public enum CddaMassUnit { Unspecified, Milligrams, Grams, Kilograms }
@@ -79,13 +79,16 @@ public readonly record struct CddaLength
         CddaLengthUnit.Millimetres => Value,
         CddaLengthUnit.Centimetres => Value * 10m,
         CddaLengthUnit.Metres => Value * 1000m,
+        CddaLengthUnit.Kilometres => Value * 1000000m,
         _ => null
     };
     public decimal? Centimetres => Millimetres / 10m;
     public decimal? Metres => Millimetres / 1000m;
+    public decimal? Kilometres => Millimetres / 1000000m;
     public static CddaLength FromMillimetres(decimal value) => new(value, CddaLengthUnit.Millimetres);
     public static CddaLength FromCentimetres(decimal value) => new(value, CddaLengthUnit.Centimetres);
     public static CddaLength FromMetres(decimal value) => new(value, CddaLengthUnit.Metres);
+    public static CddaLength FromKilometres(decimal value) => new(value, CddaLengthUnit.Kilometres);
 
     public bool Equals(CddaLength other) =>
         HasExplicitUnit == other.HasExplicitUnit &&
@@ -98,6 +101,7 @@ public readonly record struct CddaLength
             CddaLengthUnit.Millimetres => " mm",
             CddaLengthUnit.Centimetres => " cm",
             CddaLengthUnit.Metres => " m",
+            CddaLengthUnit.Kilometres => " km",
             _ => ""
         }));
 }

@@ -17,6 +17,8 @@ internal static class MeasurementSmoke
         var lengthMm = CddaLength.FromMillimetres(150m);
         Check(lengthCm.Millimetres == 150m && lengthCm == lengthMm,
             "Length normalisation and value equality");
+        Check(CddaLength.FromKilometres(1m) == CddaLength.FromMetres(1000m),
+            "Kilometre unit found in real CDDA item data");
         Check(JsonSerializer.Serialize(CddaLength.FromMetres(1.25m)) == "\"1.25 m\"",
             "New length values use invariant formatting");
 
