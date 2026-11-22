@@ -34,6 +34,20 @@ public sealed record CddaSourceRecord(string FilePath, int RecordIndex, JsonElem
 /// </summary>
 public static class CddaSourceLoader
 {
+    /// <summary>Create a single preserved raw record from JSON text.</summary>
+    public static CddaSourceRecord ParseRecord(
+        string json, string sourceName = "<memory>", int recordIndex = 0)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        using var document = JsonDocument.Parse(json, CddaRecordParser.DocumentOptions);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("type", out var type) ||
+            type.ValueKind != JsonValueKind.String)
+            throw new JsonException("Expected one JSON definition with a string 'type'.");
+        return new CddaSourceRecord(sourceName, recordIndex, root.Clone());
+    }
+
     public static async Task<IReadOnlyList<CddaSourceRecord>> LoadFileAsync(
         string filePath, CancellationToken cancellationToken = default)
     {
