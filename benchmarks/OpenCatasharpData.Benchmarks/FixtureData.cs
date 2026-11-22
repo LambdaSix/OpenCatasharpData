@@ -44,6 +44,41 @@ internal static class FixtureData
         }
         """;
 
+    /// <summary>Detailed armour fixture kept separate from the original baseline.</summary>
+    public const string ArmorDetailed = """
+        {
+          "type":"ITEM","id":"armoured_pack","subtypes":["ARMOR","TOOL"],
+          "name":{"str":"armoured pack"},"weight":"2 kg","volume":"3 L",
+          "warmth":10,"material_thickness":2.5,"sided":true,
+          "max_worn":1,"valid_mods":["steel_padded"],
+          "environmental_protection":4,
+          "armor":[
+            {
+              "covers":["torso"],"coverage":95,"cover_melee":80,
+              "cover_ranged":70,"cover_vitals":20,
+              "encumbrance":[5,15],"layers":["OUTER"],
+              "breathability":"GOOD","rigid_layer_only":true,
+              "volume_encumber_modifier":0.25,
+              "activity_noise":{"volume":8,"chance":60},
+              "material":[{"type":"kevlar","covered_by_mat":100,"thickness":2}]
+            }
+          ],
+          "pocket_data":[
+            {
+              "pocket_type":"CONTAINER","max_contains_volume":"2 L",
+              "max_contains_weight":"5 kg","max_item_length":"70 cm",
+              "min_item_length":"5 cm","min_item_volume":"250 ml",
+              "default_magazine":"heavy_battery_cell",
+              "open_container":true,"airtight":true,
+              "extra_encumbrance":2,"ripoff":3,
+              "sealed_data":{"spoil_multiplier":0.5},
+              "activity_noise":{"volume":3,"chance":20}
+            }
+          ],
+          "charges_per_use":1
+        }
+        """;
+
     public const string Gun = """
         {
           "type":"ITEM","id":"glock_19","subtypes":["GUN"],
