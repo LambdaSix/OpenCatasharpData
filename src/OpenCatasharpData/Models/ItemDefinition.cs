@@ -24,10 +24,10 @@ public class ItemDefinition : CddaDefinition
     public string? Color { get; set; }
 
     [JsonPropertyName("weight")]
-    public CddaScalar? Weight { get; set; }
+    public CddaMass? Weight { get; set; }
 
     [JsonPropertyName("volume")]
-    public CddaScalar? Volume { get; set; }
+    public CddaVolume? Volume { get; set; }
 
     [JsonPropertyName("price")]
     public CddaScalar? Price { get; set; }
@@ -59,10 +59,10 @@ public class ItemDefinition : CddaDefinition
     public string? LooksLike { get; set; }
 
     [JsonPropertyName("longest_side")]
-    public CddaScalar? LongestSide { get; set; }
+    public CddaLength? LongestSide { get; set; }
 
     [JsonPropertyName("barrel_length")]
-    public CddaScalar? BarrelLength { get; set; }
+    public CddaLength? BarrelLength { get; set; }
 
     [JsonPropertyName("display_type")]
     public string? DisplayType { get; set; }
@@ -130,10 +130,10 @@ public class ItemDefinition : CddaDefinition
     public List<CddaUseAction>? DropActions { get; set; }
 
     [JsonPropertyName("integral_volume")]
-    public CddaScalar? IntegralVolume { get; set; }
+    public CddaVolume? IntegralVolume { get; set; }
 
     [JsonPropertyName("integral_weight")]
-    public CddaScalar? IntegralWeight { get; set; }
+    public CddaMass? IntegralWeight { get; set; }
 
     [JsonPropertyName("min_skills")]
     [JsonConverter(typeof(CddaNamedAmountsConverter))]
@@ -175,7 +175,7 @@ public sealed class ComestibleItemDefinition : ItemDefinition
     public int? Fun { get; set; }
 
     [JsonPropertyName("spoils_in")]
-    public CddaScalar? SpoilsIn { get; set; }
+    public CddaDuration? SpoilsIn { get; set; }
 
     [JsonPropertyName("container")]
     public string? Container { get; set; }
@@ -301,7 +301,7 @@ public sealed class BookItemDefinition : ItemDefinition
     public int? ReadFun { get; set; }
 
     [JsonPropertyName("time")]
-    public CddaScalar? ReadingTime { get; set; }
+    public CddaDuration? ReadingTime { get; set; }
 }
 
 public sealed class GunModItemDefinition : ItemDefinition
@@ -319,5 +319,5 @@ public sealed class GunModItemDefinition : ItemDefinition
     public int? HandlingModifier { get; set; }
 
     [JsonPropertyName("install_time")]
-    public CddaScalar? InstallTime { get; set; }
+    public CddaDuration? InstallTime { get; set; }
 }
