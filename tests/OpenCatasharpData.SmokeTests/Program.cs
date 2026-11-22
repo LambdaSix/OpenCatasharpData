@@ -103,7 +103,7 @@ Check(material.Relative?.ValueKind == JsonValueKind.Object, "Relative patch pres
 var category = Expect<ItemCategoryDefinition>(definitions[2], "Category");
 Check(category.NameNoun?.Singular == "software", "str_sp translation");
 
-var generic = Expect<GenericItemDefinition>(definitions[3], "Generic item");
+var generic = Expect<ItemDefinition>(definitions[3], "Generic item");
 Check(generic.IdString == "fire", "Item ID");
 Check(generic.Weight?.Unit == CddaMassUnit.Unspecified && generic.Weight?.Value == 5m, "Numeric item weight");
 Check(generic.Material?.Select(m => m.Type).SequenceEqual(["wood", "steel"]) == true,
@@ -111,50 +111,54 @@ Check(generic.Material?.Select(m => m.Type).SequenceEqual(["wood", "steel"]) == 
 Check(generic.AdditionalProperties?["custom_attribute"].GetProperty("enabled").GetBoolean() == true,
     "Unmodelled fields preserved");
 
-var armor = Expect<ArmorItemDefinition>(definitions[4], "Armor");
+var armor = Expect<ItemDefinition>(definitions[4], "Armor");
 Check(armor.Weight?.Grams == 68m, "Unit-bearing weight");
 Check(armor.Armor?[0].Covers?.Count == 2, "Armor coverage is a typed list");
 Check(armor.Armor?[0].Encumbrance?.Maximum == 10m, "Armor encumbrance range");
 Check(armor.Armor?[0].Material?[0].Thickness == 2m, "Armor material thickness");
 
-var food = Expect<ComestibleItemDefinition>(definitions[5], "Comestible");
-Check(food.Calories == 120m && food.Quench == 65 && food.Fun == 2, "Nutrition fields");
+var food = Expect<ItemDefinition>(definitions[5], "Comestible");
+Check(food.ComestibleData?.Calories == 120m && food.ComestibleData?.Quench == 65 && food.ComestibleData?.Fun == 2, "Nutrition fields");
 Check(food.Material?[0].Portion == 100m, "Material portions");
-Check(food.Vitamins?[0].Name == "vitC" && food.Vitamins[0].Value.Number == 167m,
+Check(food.ComestibleData?.Vitamins?[0].Name == "vitC" && food.ComestibleData?.Vitamins[0].Value.Number == 167m,
     "Numeric vitamin pairs");
 
-var tool = Expect<ToolItemDefinition>(definitions[6], "Tool");
+var tool = Expect<ItemDefinition>(definitions[6], "Tool");
 Check(tool.Qualities?[1].Id == "BUTCHER" && tool.Qualities[1].Level == 37m,
     "Tuple-style quality records");
 
-var gun = Expect<GunItemDefinition>(definitions[7], "Gun");
-Check(gun.Dispersion == 480 && gun.Handling == 10, "Gun statistics");
+var gun = Expect<ItemDefinition>(definitions[7], "Gun");
+Check(gun.GunData?.Dispersion == 480 && gun.GunData?.Handling == 10, "Gun statistics");
+Check(gun.ComestibleData is null, "Unrelated subtype slot absent");
 Check(gun.Variants?[0].Id == "glock_19_cop" && gun.Variants[0].Weight == 5m,
     "Gun variants eagerly typed");
 
-var ammo = Expect<AmmoItemDefinition>(definitions[8], "Ammo");
+var ammo = Expect<ItemDefinition>(definitions[8], "Ammo");
 Check(ammo.AmmoTypes?.SequenceEqual(["9mm"]) == true, "String ammo type");
-Check(ammo.Count == 50 && ammo.Casing == "9mm_casing", "Ammo fields");
-Check(ammo.Damage?.DamageType == "bullet" && ammo.Damage.Amount == 23m,
+Check(ammo.AmmoData?.Count == 50 && ammo.AmmoData?.Casing == "9mm_casing", "Ammo fields");
+Check(ammo.AmmoData?.Damage?.DamageType == "bullet" && ammo.AmmoData?.Damage.Amount == 23m,
     "Ranged ammunition damage eagerly typed");
 
-var magazine = Expect<MagazineItemDefinition>(definitions[9], "Magazine");
+var magazine = Expect<ItemDefinition>(definitions[9], "Magazine");
 Check(magazine.AmmoTypes?.SequenceEqual(["9mm"]) == true, "Array ammo type");
 Check(magazine.PocketData?[0].AmmoRestriction?["9mm"] == 15, "Typed pocket data");
 
-var book = Expect<BookItemDefinition>(definitions[10], "Book");
-Check(book.ReadingTime?.Minutes == 15m && book.Chapters == 16, "Book fields");
+var book = Expect<ItemDefinition>(definitions[10], "Book");
+Check(book.BookData?.ReadingTime?.Minutes == 15m && book.BookData?.Chapters == 16, "Book fields");
 
-var gunmod = Expect<GunModItemDefinition>(definitions[11], "Gun mod");
-Check(gunmod.ModTargets?.SequenceEqual(["bow"]) == true, "Gun mod targets");
+var gunmod = Expect<ItemDefinition>(definitions[11], "Gun mod");
+Check(gunmod.GunModData?.ModTargets?.SequenceEqual(["bow"]) == true, "Gun mod targets");
 
-var combined = Expect<ArmorItemDefinition>(definitions[12], "Combined item");
+var combined = Expect<ItemDefinition>(definitions[12], "Combined item");
 Check(combined.Subtypes?.Count == 2, "Multiple subtypes retained");
+Check(combined.ArmorData?.Sections?.Count == 1 && combined.MagazineData is not null,
+    "Both armor and magazine slots attached");
 Check(combined.AmmoTypes?[0] == "9mm" && combined.PocketData?[0].AmmoRestriction?["9mm"] == 30,
     "Combined item's equipment facets preserved");
 
-var brewable = Expect<ComestibleItemDefinition>(definitions[13], "Unknown then known subtype");
-Check(brewable.Quench == 5, "First recognised subtype selected");
+var brewable = Expect<ItemDefinition>(definitions[13], "Unknown then known subtype");
+Check(brewable.ComestibleData?.Quench == 5 && brewable.Subtypes?.Contains("BREWABLE") == true,
+    "Known subtype attaches even when declared after unsupported subtype");
 
 var unknown = Expect<UnknownDefinition>(definitions[14], "Unknown");
 Check(unknown.IdString is null && unknown.AdditionalProperties?["special"].GetInt32() == 42,
@@ -162,11 +166,11 @@ Check(unknown.IdString is null && unknown.AdditionalProperties?["special"].GetIn
 
 var single = CddaRecordParser.Default.Parse(
     """{"type":"ITEM","subtypes":["COMESTIBLE"],"id":"single","calories":250}""");
-Check(single is ComestibleItemDefinition { Calories: 250m, IdString: "single" },
+Check(single is ItemDefinition { ComestibleData: { Calories: 250m }, IdString: "single" },
     "Single-record JSON parser");
 var encoded = Encoding.UTF8.GetBytes(
     """{"type":"ITEM","subtypes":["MAGAZINE"],"id":"single_mag","ammo_type":["battery"]}""");
-Check(CddaRecordParser.Default.Parse(encoded) is MagazineItemDefinition,
+Check(CddaRecordParser.Default.Parse(encoded) is ItemDefinition { MagazineData: not null },
     "Single-record UTF-8 parser");
 
 var custom = new CddaRecordParser(
@@ -180,7 +184,7 @@ Check(customResult is CustomDefinition { Power: 8, IdString: "mine" },
     "Independent custom parser handler");
 
 // Exercise every common-item converter, including CDDA's multiple JSON shapes.
-var fullItem = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
+var fullItem = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"sample_melee",
@@ -219,14 +223,14 @@ Check(fullItem.RangedDamage?[0].DamageType == "bullet" &&
     fullItem.ConditionalNames?[0].Name?.Singular == "steel hammer",
     "Typed common conditionals and ranged damage");
 
-var legacyHit = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
+var legacyHit = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """{"type":"ITEM","id":"legacy","to_hit":1,"use_action":{"type":"holster"}}"""),
     "Legacy to_hit");
 Check(legacyHit.ToHit?.LegacyBonus == 1m &&
     legacyHit.UseActions?.Single().Type == "holster",
     "Legacy to_hit and single-object use_action");
 
-var ammoDetails = Expect<AmmoItemDefinition>(CddaRecordParser.Default.Parse(
+var ammoDetails = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"bullet","subtypes":["AMMO"],
@@ -236,13 +240,13 @@ var ammoDetails = Expect<AmmoItemDefinition>(CddaRecordParser.Default.Parse(
       "projectile_count":3
     }
     """), "Detailed ammo");
-Check(ammoDetails.Damage?.Barrels?[0].BarrelLength?.Millimetres == 25m &&
-    ammoDetails.Damage.Barrels[0].Amount == 18m,
+Check(ammoDetails.AmmoData?.Damage?.Barrels?[0].BarrelLength?.Millimetres == 25m &&
+    ammoDetails.AmmoData?.Damage.Barrels[0].Amount == 18m,
     "Ammo barrel-dependent damage eagerly typed");
-Check(ammoDetails.ShotDamage?.Amount == 10m &&
-    ammoDetails.ProjectileCount == 3, "Shot damage typed");
+Check(ammoDetails.AmmoData?.ShotDamage?.Amount == 10m &&
+    ammoDetails.AmmoData?.ProjectileCount == 3, "Shot damage typed");
 
-var detailedGun = Expect<GunItemDefinition>(CddaRecordParser.Default.Parse(
+var detailedGun = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"pistol","subtypes":["GUN"],
@@ -253,13 +257,13 @@ var detailedGun = Expect<GunItemDefinition>(CddaRecordParser.Default.Parse(
                        {"damage_type":"stab","amount":1}]
     }
     """), "Detailed gun");
-Check(detailedGun.Modes?.Count == 2 &&
-    detailedGun.Modes[1].Flag == "NPC_AVOID" &&
-    detailedGun.Modes[1].Shots == 4, "Typed gun mode tuples");
-Check(detailedGun.ValidModLocations?[0] == new CddaNamedAmount("barrel", 1m) &&
+Check(detailedGun.GunData?.Modes?.Count == 2 &&
+    detailedGun.GunData?.Modes[1].Flag == "NPC_AVOID" &&
+    detailedGun.GunData?.Modes[1].Shots == 4, "Typed gun mode tuples");
+Check(detailedGun.GunData?.ValidModLocations?[0] == new CddaNamedAmount("barrel", 1m) &&
     detailedGun.RangedDamage?.Count == 2, "Gun mod slot tuples and ranged damage list");
 
-var detailedArmor = Expect<ArmorItemDefinition>(CddaRecordParser.Default.Parse(
+var detailedArmor = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"coat","subtypes":["ARMOR"],
@@ -280,7 +284,7 @@ Check(detailedArmor.PocketData?[0].MaxItemLength?.Centimetres == 30m &&
     detailedArmor.PocketData[0].MagazineWell?.Millilitres == 250m,
     "Typed pocket geometry and restrictions");
 
-var additionalFields = Expect<GenericItemDefinition>(CddaRecordParser.Default.Parse(
+var additionalFields = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"additional_fields",
@@ -303,7 +307,7 @@ Check(additionalFields.TickActions?[0].Type == "MP3_ON" &&
     additionalFields.MinimumSkills?[0].Amount == 2m,
     "Extra actions, dimensions, and skill tuples");
 
-var qualityObject = Expect<ToolItemDefinition>(CddaRecordParser.Default.Parse(
+var qualityObject = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"forge_tool","subtypes":["TOOL"],
@@ -315,19 +319,19 @@ Check(qualityObject.Qualities?[0].Id == "TEMPER" &&
     qualityObject.Qualities[0].Speed == 1.1m &&
     qualityObject.Qualities[1].Id == "HAMMER", "Object and tuple qualities");
 
-var unitVitamins = Expect<ComestibleItemDefinition>(CddaRecordParser.Default.Parse(
+var unitVitamins = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"juice","subtypes":["COMESTIBLE"],
       "vitamins":[["vitC","83700 μg"],["iron","320 μg"],["fruit_allergen",1]]
     }
     """), "Unit vitamin values");
-Check(unitVitamins.Vitamins?[0].Name == "vitC" &&
-    unitVitamins.Vitamins[0].Value.Text == "83700 μg" &&
-    unitVitamins.Vitamins[2].Value.Number == 1m,
+Check(unitVitamins.ComestibleData?.Vitamins?[0].Name == "vitC" &&
+    unitVitamins.ComestibleData?.Vitamins[0].Value.Text == "83700 μg" &&
+    unitVitamins.ComestibleData?.Vitamins[2].Value.Number == 1m,
     "Vitamin quantities are numeric or unit strings");
 
-var tupleActions = Expect<ToolItemDefinition>(CddaRecordParser.Default.Parse(
+var tupleActions = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
     """
     {
       "type":"ITEM","id":"repairkit","subtypes":["TOOL"],
@@ -341,6 +345,21 @@ Check(tupleActions.UseActions?.Count == 4 &&
     tupleActions.UseActions[3].Type == "repair_item",
     "Mixed action tuple, string and object forms");
 
+var mixedSlots = Expect<ItemDefinition>(CddaRecordParser.Default.Parse(
+    """
+    {
+      "type":"ITEM","id":"armor_tool_food",
+      "subtypes":["ARMOR","TOOL","COMESTIBLE"],
+      "armor":[{"covers":["torso"],"coverage":90}],
+      "charges_per_use":2,"calories":75,"healthy":-2,
+      "addiction_type":["caffeine",{"addiction":"nicotine","potential":4}]
+    }
+    """), "Composed three-slot item");
+Check(mixedSlots.ArmorData?.Sections?[0].Coverage == 90m &&
+    mixedSlots.ToolData?.ChargesPerUse == 2 &&
+    mixedSlots.ComestibleData?.Calories == 75m &&
+    mixedSlots.ComestibleData?.Health == -2m, "All declared slots materialised");
+
 var directory = Path.Combine(Path.GetTempPath(), "OpenCatasharpData-" + Guid.NewGuid());
 Directory.CreateDirectory(Path.Combine(directory, "nested"));
 try
@@ -351,7 +370,7 @@ try
 
     var catalog = await CddaJsonLoader.LoadDirectoryCatalogAsync(directory);
     Check(catalog.Entries.Count == 16, "Catalog materializes all records");
-    Check(catalog.Get<ComestibleItemDefinition>().Count == 2, "Typed catalog query");
+    Check(catalog.GetItemsWith<ComestibleData>().Count == 2, "Typed catalog query");
     Check(catalog.FindById("fire").Count == 2, "Repeated IDs preserved");
     Check(catalog.FindById("glock_19")[0].FilePath.EndsWith("sample.json"),
         "Catalog source filename");
@@ -366,7 +385,7 @@ try
 
     await using var input = File.OpenRead(Path.Combine(directory, "other.json"));
     var customBatch = await CddaJsonLoader.LoadAsync(input, parser: custom);
-    Check(customBatch[0] is GenericItemDefinition, "Custom handler registry works with loader");
+    Check(customBatch[0] is ItemDefinition, "Custom handler registry works with loader");
 }
 finally
 {
@@ -374,6 +393,8 @@ finally
 }
 
 MeasurementSmoke.Run();
+CompositionSmoke.Run();
+await ResolutionSmoke.RunAsync();
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");
 
@@ -403,6 +424,7 @@ if (args.Length == 2 && args[0] == "--scan-dir")
     Console.WriteLine($"Full-fork probe: {scannedFiles} successfully parsed files, " +
                       $"{scannedDefinitions} records, {failures} failed files.");
     if (failures != 0) Environment.ExitCode = 1;
+    else await ResolutionSmoke.RunPinnedForkExamplesAsync(scanDirectory);
 }
 
 
