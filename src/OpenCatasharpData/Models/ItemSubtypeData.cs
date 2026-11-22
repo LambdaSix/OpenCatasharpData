@@ -2,6 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace OpenCatasharpData.Models;
 
+/// <summary>
+/// Armor-only fields of an ITEM. Missing values remain null to distinguish
+/// an omitted source property from a game-applied default.
+/// Sections references the eagerly deserialized ITEM armor array.
+/// </summary>
 public sealed class ArmorData
 {
     [JsonIgnore]
@@ -12,6 +17,52 @@ public sealed class ArmorData
 
     [JsonPropertyName("material_thickness")]
     public CddaScalar? MaterialThickness { get; set; }
+
+    [JsonPropertyName("sided")]
+    public bool? Sided { get; set; }
+
+    [JsonPropertyName("power_armor")]
+    public bool? PowerArmor { get; set; }
+
+    [JsonPropertyName("max_worn")]
+    public int? MaximumWorn { get; set; }
+
+    [JsonPropertyName("valid_mods")]
+    public List<string>? ValidMods { get; set; }
+
+    [JsonPropertyName("non_functional")]
+    public string? NonFunctionalItem { get; set; }
+
+    [JsonPropertyName("damage_verb")]
+    public string? DamageVerb { get; set; }
+
+    [JsonPropertyName("environmental_protection")]
+    public decimal? EnvironmentalProtection { get; set; }
+
+    [JsonPropertyName("encumbrance")]
+    public CddaScalarRange? Encumbrance { get; set; }
+
+    [JsonPropertyName("max_encumbrance")]
+    public decimal? MaximumEncumbrance { get; set; }
+
+    [JsonPropertyName("covers")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? Covers { get; set; }
+
+    [JsonPropertyName("coverage")]
+    public decimal? Coverage { get; set; }
+
+    [JsonPropertyName("cover_melee")]
+    public decimal? MeleeCoverage { get; set; }
+
+    [JsonPropertyName("cover_ranged")]
+    public decimal? RangedCoverage { get; set; }
+
+    [JsonPropertyName("cover_vitals")]
+    public decimal? VitalCoverage { get; set; }
+
+    [JsonPropertyName("energy_shield_max_hp")]
+    public System.Text.Json.JsonElement? EnergyShieldMaximumHitPoints { get; set; }
 }
 
 public sealed class ComestibleData
