@@ -218,6 +218,19 @@ dotnet run --project tests/OpenCatasharpData.SmokeTests -c Release -- \
 
 See [coverage scanner guidance](tools/SCHEMA_COVERAGE.md) for caveats and re-baselining.
 
+## Source versus resolved ITEM definitions
+
+A new opt-in CddaSourceLoader + CddaItemResolver layer preserves the original
+JSON and materialises a **separate resolved, eagerly typed** ItemDefinition.
+It handles common ITEM copy-from, numeric relative/proportional operations,
+container extend/delete, abstract templates and chained inheritance.
+Missing parents, cycles, ambiguous identities and unsupported patch shapes
+produce explicit errors instead of silently losing data.
+
+The existing raw CddaJsonLoader APIs remain unchanged. See
+[source-resolution documentation](doc/ITEM_RESOLUTION.md) for API examples,
+limitations and additional BenchmarkDotNet coverage.
+
 ## Scope and limitations
 
 - This reads **raw source definitions**, not final resolved game data. copy-from, extend, delete, relative, and proportional are preserved but **not applied**.
