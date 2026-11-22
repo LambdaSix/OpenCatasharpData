@@ -20,8 +20,8 @@ using OpenCatasharpData.Models;
 CddaDefinition definition = CddaRecordParser.Default.Parse(
     """{"type":"ITEM","subtypes":["COMESTIBLE"],"id":"apple","calories":95}""");
 
-var food = (ComestibleItemDefinition)definition;
-Console.WriteLine($"{food.IdString}: {food.Calories}");
+var item = (ItemDefinition)definition;
+Console.WriteLine($"{item.IdString}: {item.ComestibleData?.Calories}");
 ~~~
 
 Single-record overloads accept UTF-8 bytes and JsonElement too. Known fields are converted to typed values at deserialization time.
@@ -40,7 +40,7 @@ var definitions = await CddaJsonLoader.LoadFileAsync(
 CddaDataCatalog catalog = await CddaJsonLoader.LoadDirectoryCatalogAsync(
     "/path/to/Cataclysm-DDA/data/json/items");
 
-IReadOnlyList<ComestibleItemDefinition> foods = catalog.Get<ComestibleItemDefinition>();
+IReadOnlyList<ItemDefinition> foods = catalog.GetItemsWith<ComestibleData>();
 IReadOnlyList<LoadedDefinition> matches = catalog.FindById("apple_cider");
 
 // Or stream one file at a time.
@@ -74,21 +74,61 @@ var catalog = await CddaJsonLoader.LoadDirectoryCatalogAsync(
 
 No loader changes are necessary to register new handlers or new DTO types.
 
-## Typed item models
+## Composable item subtypes and complete comestibles
 
-CDDA uses a top-level discriminator of type=ITEM with a subtypes array rather than always using item subtype names in type. Handlers select the **first recognised subtype in source order**, ignoring unknown subtype names. The base ItemDefinition contains shared and composite-item properties such as armor, pocket_data and ammo_type.
+An ITEM definition is always an ItemDefinition with **one eagerly parsed data
+component for each recognised declared subtype**. It is not classified into a
+single derived class anymore. Combined ARMOR/TOOL/COMESTIBLE items expose all
+three typed slots; unknown subtype names remain in the Subtypes list.
 
-| DTO | CDDA subtype | Selected eager properties |
-|---|---|---|
-| GenericItemDefinition | no recognised subtype | name, material, weight, volume, flags, qualities |
-| ArmorItemDefinition | ARMOR | armor coverage, encumbrance, material layers, warmth |
-| ComestibleItemDefinition | COMESTIBLE | calories, quench, fun, vitamins, spoilage |
-| ToolItemDefinition | TOOL | charges and charge consumption |
-| GunItemDefinition | GUN | skill, dispersion, handling, reload, durability |
-| AmmoItemDefinition | AMMO | count, stack size, casing, range |
-| MagazineItemDefinition | MAGAZINE | capacity, ammo types, reload time, pockets |
-| BookItemDefinition | BOOK | skill, intelligence, chapters, reading time |
-| GunModItemDefinition | GUNMOD | location, targets, modifiers, installation time |
+The built-in slot properties are ArmorData, ComestibleData, ToolData, GunData,
+AmmoData, MagazineData, BookData and GunModData. ItemDefinition.GetSubtype<T>()
+works for built-in and custom slots, with no deferred JSON parsing.
+
+~~~csharp
+using OpenCatasharpData.Models;
+using OpenCatasharpData.Parsing;
+
+var item = (ItemDefinition)CddaRecordParser.Default.Parse(
+    """
+    {"type":"ITEM","id":"food_armor","subtypes":["COMESTIBLE","ARMOR"],
+     "calories":150,"healthy":-2,
+     "armor":[{"covers":["torso"],"coverage":75}]}
+    """);
+
+decimal? calories = item.ComestibleData?.Calories;   // 150
+decimal? health = item.ComestibleData?.Health;       // -2
+decimal? coverage = item.ArmorData?.Sections?[0].Coverage; // 75
+~~~
+
+Each slot has an independent ICddaItemSubtypeHandler. You can register
+new subtype handlers without editing the record parser, JSON file loader or
+directory loader:
+
+~~~csharp
+var handlers = CddaDefaultHandlers.CreateItemSubtypeHandlers().ToList();
+handlers.Add(new JsonItemSubtypeHandler<MyCustomSlot>("MY_CUSTOM_SUBTYPE"));
+var parser = new CddaRecordParser(CddaDefaultHandlers.Create(handlers));
+~~~
+
+Your MyCustomSlot class can use System.Text.Json attributes. The parser eagerly
+deserialises it and ItemDefinition.GetSubtype<MyCustomSlot>() retrieves it.
+To query a materialised directory catalogue by slot, use
+catalog.GetItemsWith<ComestibleData>() rather than by runtime subclass.
+
+ComestibleData covers the documented consumption, nutrition, and food
+metadata: type, calories, fun, quench, spoilage, vitamins, stimulation,
+sleepiness, health, addiction potential and addiction types, monotony, serving
+tools, stack sizes, seasonings, freezing point, cooking/eating equivalence,
+parasites, contamination, rot spawn, smoking results and pet-food categories.
+Consumption EOCs can be referenced by ID or declared inline; known metadata is
+typed and unmodelled inline EOC details are retained as extension properties.
+Tool qualities and vitamin quantities remain independently typed.
+
+This refactor **intentionally changes the API**: use ItemDefinition and its
+component properties instead of GenericItemDefinition, ArmorItemDefinition,
+ComestibleItemDefinition, etc. Common fields (including material, pockets and
+ammo types) remain on ItemDefinition.
 
 Shared values use eager System.Text.Json converters:
 
@@ -119,7 +159,7 @@ Example using loaded DTOs:
 using OpenCatasharpData.Models;
 using OpenCatasharpData.Parsing;
 
-var item = (GenericItemDefinition)CddaRecordParser.Default.Parse(
+var item = (ItemDefinition)CddaRecordParser.Default.Parse(
     """{"type":"ITEM","id":"mug","weight":"1.5 kg","volume":"250 ml",
         "longest_side":"15 cm"}""");
 
@@ -132,8 +172,8 @@ bool equals = CddaVolume.FromLitres(1m) == CddaVolume.FromMillilitres(1000m);
 
 Other migrated fields include integral_weight/volume, nested pocket weight, volume,
 length and magazine-well dimensions, ammunition damage barrel lengths,
-ComestibleItemDefinition.SpoilsIn, BookItemDefinition.ReadingTime and
-GunModItemDefinition.InstallTime.
+ComestibleData.SpoilsIn, BookData.ReadingTime and
+GunModData.InstallTime.
 
 The source spelling is preserved during JSON serialisation (for example "0.25 L"
 will not turn into "250 ml"). Values created through typed factory methods use
@@ -154,7 +194,7 @@ The automated [schema-coverage workflow](.github/workflows/schema-coverage.yml) 
 It inventories field names, observed shapes, subtype frequency and missing nested DTO fields.
 
 - [Baseline coverage report](reports/item-schema-coverage.baseline.md): 85.4% of authored top-level ITEM field occurrences mapped to a DTO property.
-- [Post-expansion coverage report](reports/item-schema-coverage.after.md): 96.9% of authored top-level ITEM field occurrences mapped.
+- [Post-expansion coverage report](reports/item-schema-coverage.after.md): 96.9% of authored top-level ITEM field occurrences mapped (pre-composition baseline).
 - Real-data validation: **489/489 JSON files and 10,525/10,525 definitions parsed** successfully from the pinned `data/json/items` directory.
 
 The percentage measures **declared field-name mapping**, not semantic correctness or inheritance resolution.
@@ -181,7 +221,7 @@ See [coverage scanner guidance](tools/SCHEMA_COVERAGE.md) for caveats and re-bas
 ## Scope and limitations
 
 - This reads **raw source definitions**, not final resolved game data. copy-from, extend, delete, relative, and proportional are preserved but **not applied**.
-- A composite item has one concrete DTO, determined by the first recognised subtype; its full subtype list and common equipment facets remain typed. Additional subtype-specific fields not yet modelled remain in AdditionalProperties.
+- A composite item has a typed slot for each recognised declared subtype. Unrecognised fields and unsupported subtype declarations remain available for future modelling.
 - Unmodelled fields are preserved via JsonExtensionData. Known model fields are eagerly deserialized only once, as the record is read.
 - Recognised physical units are normalised by their dedicated value types, but unqualified numeric fields are deliberately not assigned an implied unit. Other scalar domains (including prices and power) remain CddaScalar.
 - Files are expected to contain arrays of definitions. Directory enumeration processes files in path order and returns source paths.

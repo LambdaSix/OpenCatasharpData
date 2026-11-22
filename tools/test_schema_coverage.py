@@ -23,7 +23,7 @@ class SchemaCoverageTests(unittest.TestCase):
             (models / "DTO.cs").write_text(
                 'public abstract class CddaDefinition { [JsonPropertyName("type")] public string Type; }'
                 'public class ItemDefinition { [JsonPropertyName("id")] public string Id; }'
-                'public sealed class ArmorItemDefinition { [JsonPropertyName("armor")] public object Armor; }',
+                'public sealed class ArmorData { [JsonPropertyName("armor")] public object Armor; }',
                 encoding="utf-8",
             )
             (data / "a.json").write_text(
@@ -37,7 +37,7 @@ class SchemaCoverageTests(unittest.TestCase):
             self.assertEqual(result["items"], 2)
             self.assertEqual(result["subtype_counts"]["ARMOR"], 1)
             self.assertEqual(result["subtype_counts"]["MAGAZINE"], 1)
-            self.assertEqual(result["routing_counts"]["ARMOR"], 1)
+            self.assertEqual(result["routing_counts"]["ARMOR+MAGAZINE"], 1)
             self.assertEqual(result["unmodelled"]["new_field"], 1)
             self.assertIn("Nested field gaps", report(result, "forksha", "modelsha"))
 

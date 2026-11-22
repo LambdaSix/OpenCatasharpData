@@ -60,7 +60,7 @@ internal static class MeasurementSmoke
              "pocket_data":[{"pocket_type":"CONTAINER","max_contains_volume":"1 L",
                              "max_contains_weight":"2 kg","max_item_length":"35 cm",
                              "magazine_well":"250 ml"}]}
-            """) as GenericItemDefinition;
+            """) as ItemDefinition;
         Check(dto is not null && dto.Weight?.Grams == 1000m &&
             dto.Volume?.Millilitres == 2000m && dto.LongestSide?.Millimetres == 250m &&
             dto.BarrelLength?.Millimetres == 100m &&
@@ -74,12 +74,12 @@ internal static class MeasurementSmoke
 
         var food = CddaRecordParser.Default.Parse(
             """{"type":"ITEM","subtypes":["COMESTIBLE"],"id":"food","spoils_in":"6 days"}""")
-            as ComestibleItemDefinition;
-        Check(food?.SpoilsIn?.Days == 6m, "Spoilage is a typed duration");
+            as ItemDefinition;
+        Check(food?.ComestibleData?.SpoilsIn?.Days == 6m, "Spoilage is a typed duration");
         var gunmod = CddaRecordParser.Default.Parse(
             """{"type":"ITEM","subtypes":["GUNMOD"],"id":"attachment","install_time":"15 m"}""")
-            as GunModItemDefinition;
-        Check(gunmod?.InstallTime?.Minutes == 15m, "Gunmod installation duration typed");
+            as ItemDefinition;
+        Check(gunmod?.GunModData?.InstallTime?.Minutes == 15m, "Gunmod installation duration typed");
 
         Console.WriteLine("Typed measurement value tests passed.");
     }

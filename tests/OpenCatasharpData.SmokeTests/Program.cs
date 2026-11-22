@@ -374,6 +374,7 @@ finally
 }
 
 MeasurementSmoke.Run();
+CompositionSmoke.Run();
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");
 

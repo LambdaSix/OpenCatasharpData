@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace OpenCatasharpData.Models;
 
 /// <summary>Typed common properties shared by all CDDA ITEM definitions.</summary>
-public class ItemDefinition : CddaDefinition
+public sealed class ItemDefinition : CddaDefinition
 {
     [JsonPropertyName("subtypes")]
     public List<string>? Subtypes { get; set; }
@@ -145,179 +145,32 @@ public class ItemDefinition : CddaDefinition
     [JsonPropertyName("ammo_type")]
     [JsonConverter(typeof(CddaStringListConverter))]
     public List<string>? AmmoTypes { get; set; }
+    // Eagerly deserialised subtype components. Slots are populated once,
+    // by the compositional handler, and never lazily parsed on access.
+    [JsonIgnore]
+    private Dictionary<Type, object>? _subtypeData;
+
+    [JsonIgnore] public ArmorData? ArmorData => GetSubtype<ArmorData>();
+    [JsonIgnore] public ComestibleData? ComestibleData => GetSubtype<ComestibleData>();
+    [JsonIgnore] public ToolData? ToolData => GetSubtype<ToolData>();
+    [JsonIgnore] public GunData? GunData => GetSubtype<GunData>();
+    [JsonIgnore] public AmmoData? AmmoData => GetSubtype<AmmoData>();
+    [JsonIgnore] public MagazineData? MagazineData => GetSubtype<MagazineData>();
+    [JsonIgnore] public BookData? BookData => GetSubtype<BookData>();
+    [JsonIgnore] public GunModData? GunModData => GetSubtype<GunModData>();
+
+    /// <summary>Get a built-in or custom typed component, without parsing JSON.</summary>
+    public TSlot? GetSubtype<TSlot>() where TSlot : class =>
+        _subtypeData is not null &&
+        _subtypeData.TryGetValue(typeof(TSlot), out var value) ? (TSlot)value : null;
+
+    /// <summary>Attach an already-deserialised slot from an independent handler.</summary>
+    public void SetSubtype<TSlot>(TSlot slot) where TSlot : class
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+        (_subtypeData ??= new())[typeof(TSlot)] = slot;
+    }
+
+
 }
 
-public sealed class GenericItemDefinition : ItemDefinition
-{
-}
-
-public sealed class ArmorItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("warmth")]
-    public int? Warmth { get; set; }
-
-    [JsonPropertyName("material_thickness")]
-    public CddaScalar? MaterialThickness { get; set; }
-}
-
-public sealed class ComestibleItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("comestible_type")]
-    public string? ComestibleType { get; set; }
-
-    [JsonPropertyName("calories")]
-    public decimal? Calories { get; set; }
-
-    [JsonPropertyName("quench")]
-    public int? Quench { get; set; }
-
-    [JsonPropertyName("fun")]
-    public int? Fun { get; set; }
-
-    [JsonPropertyName("spoils_in")]
-    public CddaDuration? SpoilsIn { get; set; }
-
-    [JsonPropertyName("container")]
-    public string? Container { get; set; }
-
-    [JsonPropertyName("vitamins")]
-    [JsonConverter(typeof(CddaVitaminsJsonConverter))]
-    public List<CddaVitamin>? Vitamins { get; set; }
-}
-
-public sealed class ToolItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("charges_per_use")]
-    public int? ChargesPerUse { get; set; }
-
-    [JsonPropertyName("max_charges")]
-    public int? MaxCharges { get; set; }
-
-    [JsonPropertyName("initial_charges")]
-    public int? InitialCharges { get; set; }
-
-    [JsonPropertyName("turns_per_charge")]
-    public int? TurnsPerCharge { get; set; }
-}
-
-public sealed class GunItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("skill")]
-    public string? Skill { get; set; }
-
-    [JsonPropertyName("dispersion")]
-    public int? Dispersion { get; set; }
-
-    [JsonPropertyName("durability")]
-    public int? Durability { get; set; }
-
-    [JsonPropertyName("reload")]
-    public int? ReloadTime { get; set; }
-
-    [JsonPropertyName("handling")]
-    public int? Handling { get; set; }
-
-    [JsonPropertyName("modes")]
-    public List<CddaGunMode>? Modes { get; set; }
-
-    [JsonPropertyName("valid_mod_locations")]
-    [JsonConverter(typeof(CddaNamedAmountsConverter))]
-    public List<CddaNamedAmount>? ValidModLocations { get; set; }
-
-    [JsonPropertyName("clip_size")]
-    public int? ClipSize { get; set; }
-
-    [JsonPropertyName("ammo")]
-    [JsonConverter(typeof(CddaStringListConverter))]
-    public List<string>? Ammo { get; set; }
-}
-
-public sealed class AmmoItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("damage")]
-    public CddaDamage? Damage { get; set; }
-
-    [JsonPropertyName("shot_damage")]
-    public CddaDamage? ShotDamage { get; set; }
-
-    [JsonPropertyName("projectile_count")]
-    public int? ProjectileCount { get; set; }
-
-    [JsonPropertyName("dispersion")]
-    public int? Dispersion { get; set; }
-
-    [JsonPropertyName("effects")]
-    public List<string>? Effects { get; set; }
-
-    [JsonPropertyName("recoil")]
-    public decimal? Recoil { get; set; }
-
-    [JsonPropertyName("loudness")]
-    public decimal? Loudness { get; set; }
-
-    [JsonPropertyName("count")]
-    public int? Count { get; set; }
-
-    [JsonPropertyName("stack_size")]
-    public int? StackSize { get; set; }
-
-    [JsonPropertyName("range")]
-    public int? Range { get; set; }
-
-    [JsonPropertyName("casing")]
-    public string? Casing { get; set; }
-}
-
-public sealed class MagazineItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("capacity")]
-    public int? Capacity { get; set; }
-
-    [JsonPropertyName("reload_time")]
-    public int? ReloadTime { get; set; }
-}
-
-public sealed class BookItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("read_skill")]
-    public string? ReadSkill { get; set; }
-
-    [JsonPropertyName("skill")]
-    public string? Skill { get; set; }
-
-    [JsonPropertyName("required_level")]
-    public int? RequiredLevel { get; set; }
-
-    [JsonPropertyName("max_level")]
-    public int? MaxLevel { get; set; }
-
-    [JsonPropertyName("intelligence")]
-    public int? Intelligence { get; set; }
-
-    [JsonPropertyName("chapters")]
-    public int? Chapters { get; set; }
-
-    [JsonPropertyName("read_fun")]
-    public int? ReadFun { get; set; }
-
-    [JsonPropertyName("time")]
-    public CddaDuration? ReadingTime { get; set; }
-}
-
-public sealed class GunModItemDefinition : ItemDefinition
-{
-    [JsonPropertyName("location")]
-    public string? Location { get; set; }
-
-    [JsonPropertyName("mod_targets")]
-    public List<string>? ModTargets { get; set; }
-
-    [JsonPropertyName("dispersion_modifier")]
-    public int? DispersionModifier { get; set; }
-
-    [JsonPropertyName("handling_modifier")]
-    public int? HandlingModifier { get; set; }
-
-    [JsonPropertyName("install_time")]
-    public CddaDuration? InstallTime { get; set; }
-}

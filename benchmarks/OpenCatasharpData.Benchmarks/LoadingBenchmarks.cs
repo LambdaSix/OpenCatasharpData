@@ -78,6 +78,6 @@ public class LoadingBenchmarks
     public IReadOnlyList<LoadedDefinition> LookupById() => _catalog.FindById("food_0128");
 
     [Benchmark]
-    public IReadOnlyList<ComestibleItemDefinition> GetByType() =>
-        _catalog.Get<ComestibleItemDefinition>();
+    public IReadOnlyList<ItemDefinition> GetByType() =>
+        _catalog.GetItemsWith<ComestibleData>();
 }

@@ -15,17 +15,21 @@ import re
 SUBTYPES = ("ARMOR", "COMESTIBLE", "TOOL", "GUN", "AMMO",
             "MAGAZINE", "BOOK", "GUNMOD")
 CLASS_FOR_SUBTYPE = {
-    "ARMOR": "ArmorItemDefinition",
-    "COMESTIBLE": "ComestibleItemDefinition",
-    "TOOL": "ToolItemDefinition",
-    "GUN": "GunItemDefinition",
-    "AMMO": "AmmoItemDefinition",
-    "MAGAZINE": "MagazineItemDefinition",
-    "BOOK": "BookItemDefinition",
-    "GUNMOD": "GunModItemDefinition",
+    "ARMOR": "ArmorData",
+    "COMESTIBLE": "ComestibleData",
+    "TOOL": "ToolData",
+    "GUN": "GunData",
+    "AMMO": "AmmoData",
+    "MAGAZINE": "MagazineData",
+    "BOOK": "BookData",
+    "GUNMOD": "GunModData",
 }
 NESTED_MODEL = {
     "armor": "CddaArmorSection",
+    "contamination": "CddaContamination",
+    "rot_spawn": "CddaRotSpawn",
+    "addiction_type": "CddaAddiction",
+    "consumption_effect_on_conditions": "CddaEffectReference",
     "pocket_data": "CddaPocket",
     "material": "CddaMaterialPart",
     "variants": "CddaItemVariant",
@@ -186,12 +190,16 @@ def inventory(data_dir: Path, models: dict[str, set[str]]):
                 raise ValueError(f"{path}: item subtypes should be an array")
             for subtype in set(x for x in declared if isinstance(x, str)):
                 stats["subtype_counts"][subtype.upper()] += 1
-            selected = next(
-                (x.upper() for x in declared if isinstance(x, str) and x.upper() in SUBTYPES),
-                "GENERIC",
-            )
-            stats["routing_counts"][selected] += 1
-            known = base | models.get(CLASS_FOR_SUBTYPE.get(selected, "GenericItemDefinition"), set())
+            # Multiple declarations can coexist; the parser now loads every
+            # matching subtype into independent typed components.
+            selected = list(dict.fromkeys(
+                x.upper() for x in declared
+                if isinstance(x, str) and x.upper() in SUBTYPES
+            ))
+            stats["routing_counts"]["+".join(selected) if selected else "GENERIC"] += 1
+            known = set(base)
+            for subtype in selected:
+                known.update(models.get(CLASS_FOR_SUBTYPE[subtype], set()))
             source_id = record.get("id") or record.get("abstract") or "anonymous"
             source = f"{path.relative_to(data_dir)}:{source_id}"
             for name, value in record.items():
@@ -259,7 +267,7 @@ def report(stats, source_revision: str, model_revision: str):
         lines.append(f"| {quote}{subtype}{quote} | {count:,} | " +
                      ("yes" if subtype in SUBTYPES else "no") + " |")
     lines += [
-        "", "## Actual DTO routing (exclusive)", "",
+        "", "## Composed subtype signatures (exclusive)", "",
         "| Selected type | Records |", "|---|---:|",
     ]
     for name, count in stats["routing_counts"].most_common():
@@ -301,7 +309,7 @@ def report(stats, source_revision: str, model_revision: str):
     lines += [
         "", "## Interpretation and limitations", "",
         "- Unknown source fields are preserved, but are not typed until a DTO/converter is introduced.",
-        "- Combined subtypes are counted for every membership; the current parser chooses the first recognised subtype.",
+        "- Declared subtypes count for every membership; the parser attaches all supported subtype components.",
         "- A C# property name match is not proof that every observed JSON value shape deserializes.",
         "- Inheritance directives and patch operations are inventoried but not applied.",
         "- Re-run against the same fork SHA before and after DTO changes to obtain comparable coverage.",
