@@ -101,7 +101,7 @@ internal static class CddaItemPatch
 
             var modified = amount * operand;
             return JsonValue.Create(
-                modified.ToString(CultureInfo.InvariantCulture) + " " + match.Groups[2].Value);
+                modified.ToString("G29", CultureInfo.InvariantCulture) + " " + match.Groups[2].Value);
         }
 
         throw Error(source, path, "Numeric patch cannot be applied to this JSON value shape.");
