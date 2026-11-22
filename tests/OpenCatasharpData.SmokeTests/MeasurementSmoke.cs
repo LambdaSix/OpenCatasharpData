@@ -37,8 +37,8 @@ internal static class MeasurementSmoke
         var compound = JsonSerializer.Deserialize<CddaDuration>("\" +1 day -23 hours 50m \"");
         Check(compound.Seconds == 6600m && compound.Unit == CddaDurationUnit.Compound,
             "Signed compound durations");
-        Check(JsonSerializer.Serialize(compound) == "\" +1 day -23 hours 50m \"",
-            "Compound duration JSON round trip");
+        Check(JsonDocument.Parse(JsonSerializer.Serialize(compound)).RootElement.GetString() ==
+            " +1 day -23 hours 50m ", "Compound duration JSON round trip");
         var turns = JsonSerializer.Deserialize<CddaDuration>("\"1 turn 1 minutes 9 turns\"");
         Check(turns.Seconds == 70m && turns.ToTimeSpan() == TimeSpan.FromSeconds(70),
             "CDDA turns are one second each");
