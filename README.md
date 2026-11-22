@@ -144,8 +144,8 @@ Other supported top-level DTOs remain: SkillDefinition, MaterialDefinition, Item
 
 ## Expanded armour and pocket DTOs
 
-Every ITEM declaring ARMOR exposes its eager \`ArmorData\` component alongside
-the item's shared \`Armor\` and \`PocketData\` lists. This works for composite
+Every ITEM declaring ARMOR exposes its eager `ArmorData` component alongside
+the item's shared `Armor` and `PocketData` lists. This works for composite
 items, including ARMOR+TOOL and ARMOR+BOOK, with no first-match data loss.
 
 ~~~csharp
@@ -172,12 +172,12 @@ constraints, volume-based encumbrance modifiers and typed activity-noise
 volume/chance. CddaPocket adds magazine defaults, minimum lengths/volumes,
 maximum individual item volume, open/airtight/fire-protected pocket flags,
 ripoff and extra encumbrance values, multipliers, seal metadata and activity
-noise. Existing \`CddaLength\`, \`CddaVolume\` and \`CddaMass\` types are used
+noise. Existing `CddaLength`, `CddaVolume` and `CddaMass` types are used
 for unit-bearing limits.
 
 **Source values are not game-calculated defaults.** Omitted fields remain
 nullable. Unknown nested keys are still retained through JsonExtensionData.
-The \`energy_shield_max_hp\` field is retained as a JsonElement because it can
+The `energy_shield_max_hp` field is retained as a JsonElement because it can
 carry special shape semantics requiring separate modelling.
 
 The schema scan and pinned-CDDA deserialization probe run on every relevant
