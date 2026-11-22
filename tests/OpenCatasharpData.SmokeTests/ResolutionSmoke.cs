@@ -140,15 +140,13 @@ internal static class ResolutionSmoke
             [
                 CddaSourceLoader.ParseRecord(Parent),
                 CddaSourceLoader.ParseRecord(
-                    """{"type":"ITEM","id":"invalid","copy-from":"base_shell",
-                         "relative":{"damage":{"damage_type":"stab","amount":1}}}""")
+                    """{"type":"ITEM","id":"invalid","copy-from":"base_shell","relative":{"damage":{"damage_type":"stab","amount":1}}}""")
             ], "String discriminator");
         ExpectFailure(
             [
                 CddaSourceLoader.ParseRecord(Parent),
                 CddaSourceLoader.ParseRecord(
-                    """{"type":"ITEM","id":"invalid","copy-from":"base_shell",
-                         "proportional":{"weight":{"bad":2}}}""")
+                    """{"type":"ITEM","id":"invalid","copy-from":"base_shell","proportional":{"weight":{"bad":2}}}""")
             ], "Numeric patch");
 
         var directory = Path.Combine(Path.GetTempPath(), "cdda-resolution-" + Guid.NewGuid().ToString("N"));
