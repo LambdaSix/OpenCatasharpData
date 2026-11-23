@@ -13,7 +13,9 @@ import re
 
 
 SUBTYPES = ("ARMOR", "COMESTIBLE", "TOOL", "GUN", "AMMO",
-            "MAGAZINE", "BOOK", "GUNMOD")
+            "MAGAZINE", "BOOK", "GUNMOD", "BIONIC_ITEM", "SEED",
+            "BREWABLE", "COMPOSTABLE", "MILLING", "ENGINE", "WHEEL",
+            "PET_ARMOR", "TOOLMOD", "ARTIFACT")
 CLASS_FOR_SUBTYPE = {
     "ARMOR": "ArmorData",
     "COMESTIBLE": "ComestibleData",
@@ -23,6 +25,16 @@ CLASS_FOR_SUBTYPE = {
     "MAGAZINE": "MagazineData",
     "BOOK": "BookData",
     "GUNMOD": "GunModData",
+    "BIONIC_ITEM": "BionicItemData",
+    "SEED": "SeedData",
+    "BREWABLE": "BrewableData",
+    "COMPOSTABLE": "CompostableData",
+    "MILLING": "MillingData",
+    "ENGINE": "EngineData",
+    "WHEEL": "WheelData",
+    "PET_ARMOR": "PetArmorData",
+    "TOOLMOD": "ToolModData",
+    "ARTIFACT": "ArtifactData",
 }
 NESTED_MODEL = {
     "armor": "CddaArmorSection",
@@ -40,6 +52,7 @@ NESTED_MODEL = {
     "shot_damage": "CddaDamage",
     "ranged_damage": "CddaDamage",
     "modes": "CddaGunMode",
+    "passive_effects": "CddaArtifactPassiveEffect",
 }
 INTERESTING = (
     "melee_damage", "to_hit", "variants", "use_action", "modes", "damage",
