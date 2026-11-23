@@ -75,7 +75,7 @@ internal static class WeaponSmoke
         Check(ReferenceEquals(gun.RangedDamage, gunData.RangedDamage) &&
             gunData.RangedDamage?[0].Amount == 0m &&
             gunData.RangedDamage[0].WasNumber &&
-            JsonSerializer.Serialize(gun.RangedDamage) == "0",
+            JsonDocument.Parse(JsonSerializer.Serialize(gun)).RootElement.GetProperty("ranged_damage").GetDecimal() == 0m,
             "Legacy numeric ranged damage remains typed and round-trippable");
 
         var ammo = (ItemDefinition)CddaRecordParser.Default.Parse(
