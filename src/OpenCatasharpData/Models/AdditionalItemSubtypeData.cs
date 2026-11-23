@@ -34,7 +34,7 @@ public sealed class SeedData
     public List<Dictionary<string, CddaDuration>>? GrowthStages { get; set; }
 
     [JsonPropertyName("growth_temp")]
-    public CddaScalar? GrowthTemperature { get; set; }
+    public CddaTemperature? GrowthTemperature { get; set; }
 
     [JsonPropertyName("required_terrain_flag")]
     public string? RequiredTerrainFlag { get; set; }
@@ -147,6 +147,16 @@ public sealed class CddaArtifactAdjustment
 /// <summary>Artifact passive condition and its list of source-defined adjustments.</summary>
 public sealed class CddaArtifactPassiveEffect
 {
+    /// <summary>
+    /// Existing named enchantment reference. Alternatively, inline
+    /// properties below specify an effect directly.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonIgnore]
+    public bool IsReference => Id is not null;
+
     [JsonPropertyName("has")]
     public string? Has { get; set; }
 
@@ -155,6 +165,9 @@ public sealed class CddaArtifactPassiveEffect
 
     [JsonPropertyName("values")]
     public List<CddaArtifactAdjustment>? Values { get; set; }
+
+    [JsonPropertyName("mutations")]
+    public List<string>? Mutations { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }

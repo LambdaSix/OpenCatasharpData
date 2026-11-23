@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace OpenCatasharpData.Models;
@@ -159,6 +160,129 @@ public sealed class ItemDefinition : CddaDefinition
     [JsonPropertyName("ammo_type")]
     [JsonConverter(typeof(CddaStringListConverter))]
     public List<string>? AmmoTypes { get; set; }
+    // Remaining core ITEM metadata. These are source properties, so nullable
+    // members remain null when omitted rather than applying game-side defaults.
+    // Fields with mixed JSON shapes use dedicated eager converters.
+
+    [JsonPropertyName("snippet_category")]
+    public CddaSnippetCategory? SnippetCategory { get; set; }
+
+    [JsonPropertyName("container")]
+    public string? Container { get; set; }
+
+    [JsonPropertyName("proficiencies")]
+    public List<CddaItemProficiency>? Proficiencies { get; set; }
+
+    [JsonPropertyName("countdown_interval")]
+    public CddaDuration? CountdownInterval { get; set; }
+
+    [JsonPropertyName("repairs_with")]
+    public List<string>? RepairsWith { get; set; }
+
+    [JsonPropertyName("light")]
+    public decimal? Light { get; set; }
+
+    [JsonPropertyName("charged_qualities")]
+    [JsonConverter(typeof(CddaQualitiesJsonConverter))]
+    public List<CddaQuality>? ChargedQualities { get; set; }
+
+    [JsonPropertyName("countdown_action")]
+    public CddaItemAction? CountdownAction { get; set; }
+
+    [JsonPropertyName("martial_art")]
+    public string? MartialArt { get; set; }
+
+    // CDDA writes these as data-size strings (for example "128 MB").
+    // Retain source units until binary/decimal data-size semantics are fixed.
+    [JsonPropertyName("ememory_size")]
+    public CddaScalar? ElectronicMemorySize { get; set; }
+
+    [JsonPropertyName("etransfer_rate")]
+    public CddaScalar? ElectronicTransferRate { get; set; }
+
+    [JsonPropertyName("stackable")]
+    public bool? Stackable { get; set; }
+
+    [JsonPropertyName("environmental_protection_with_filter")]
+    public decimal? FilterEnvironmentalProtection { get; set; }
+
+    [JsonPropertyName("sub")]
+    public string? Subcategory { get; set; }
+
+    [JsonPropertyName("insulation")]
+    public decimal? Insulation { get; set; }
+
+    [JsonPropertyName("repairs_like")]
+    public string? RepairsLike { get; set; }
+
+    [JsonPropertyName("sight_dispersion")]
+    public decimal? SightDispersion { get; set; }
+
+    [JsonPropertyName("emits")]
+    public List<string>? Emits { get; set; }
+
+    [JsonPropertyName("expand_snippets")]
+    public bool? ExpandSnippets { get; set; }
+
+    // Arbitrary item-variable/property dictionaries preserve values without
+    // inventing a homogeneous data type for independent mod-defined keys.
+    [JsonPropertyName("variables")]
+    public Dictionary<string, JsonElement>? Variables { get; set; }
+
+    [JsonPropertyName("properties")]
+    public Dictionary<string, JsonElement>? Properties { get; set; }
+
+    [JsonPropertyName("generic")]
+    public bool? Generic { get; set; }
+
+    [JsonPropertyName("e_port")]
+    public string? ElectronicPort { get; set; }
+
+    [JsonPropertyName("consumption_per_use")]
+    public List<CddaFiringCost>? ConsumptionPerUse { get; set; }
+
+    [JsonPropertyName("source_monster")]
+    public string? SourceMonster { get; set; }
+
+    [JsonPropertyName("transform_into")]
+    public CddaItemTransformation? TransformInto { get; set; }
+
+    [JsonPropertyName("revert_msg")]
+    public CddaText? RevertMessage { get; set; }
+
+    [JsonPropertyName("drop")]
+    public string? DropItem { get; set; }
+
+    [JsonPropertyName("charge_factor")]
+    public decimal? ChargeFactor { get; set; }
+
+    [JsonPropertyName("nanofab_template_group")]
+    public string? NanofabricatorTemplateGroup { get; set; }
+
+    [JsonPropertyName("memory_card")]
+    public CddaMemoryCard? MemoryCard { get; set; }
+
+    [JsonPropertyName("e_ports_banned")]
+    public List<string>? BannedElectronicPorts { get; set; }
+
+    [JsonPropertyName("max_energy_shield_hp")]
+    public decimal? MaximumEnergyShieldHitPoints { get; set; }
+
+    [JsonPropertyName("template_requirements")]
+    public string? TemplateRequirements { get; set; }
+
+    [JsonPropertyName("fall_damage_reduction")]
+    public decimal? FallDamageReduction { get; set; }
+
+    [JsonPropertyName("weight_multiplier")]
+    public decimal? WeightMultiplier { get; set; }
+
+    [JsonPropertyName("min_str_required_mod_if_prone")]
+    public decimal? MinimumStrengthModifierWhenProne { get; set; }
+
+    [JsonPropertyName("fuel_efficiency")]
+    public decimal? FuelEfficiency { get; set; }
+
     // Eagerly deserialised subtype components. Slots are populated once,
     // by the compositional handler, and never lazily parsed on access.
     [JsonIgnore]

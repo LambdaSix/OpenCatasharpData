@@ -116,6 +116,42 @@ internal static class MeasurementSmoke
             poweredItem.GunData?.EnergyDrain?.Joules == 2000m,
             "Electrical measurements are eagerly typed in item and gun data");
 
+        var c = JsonSerializer.Deserialize<CddaTemperature>("\"7 C\"");
+        var mC = JsonSerializer.Deserialize<CddaTemperature>("\"7000 mC\"");
+        Check(c.Celsius == 7m && c.MilliCelsius == 7000m &&
+            c == mC && c.GetHashCode() == mC.GetHashCode(),
+            "Celsius and milli-Celsius normalise to the same absolute temperature");
+        var zeroC = CddaTemperature.FromCelsius(0);
+        var freezingF = JsonSerializer.Deserialize<CddaTemperature>("\"32 F\"");
+        var freezingK = JsonSerializer.Deserialize<CddaTemperature>("\"273.15 K\"");
+        Check(zeroC == freezingF && zeroC == freezingK &&
+            freezingF.Fahrenheit == 32m && freezingK.Kelvin == 273.15m,
+            "Fahrenheit and Kelvin convert absolute temperatures correctly");
+        Check(JsonSerializer.Deserialize<CddaTemperature>("\"-23 C\"").Kelvin == 250.15m &&
+            JsonSerializer.Serialize(c) == "\"7 C\"" &&
+            JsonSerializer.Serialize(CddaTemperature.FromKelvin(273.15m)) == "\"273.15 K\"",
+            "Signed temperatures and original JSON shape");
+        var unqualifiedC = JsonSerializer.Deserialize<CddaTemperature>("23");
+        Check(!unqualifiedC.HasExplicitUnit && unqualifiedC.Celsius is null &&
+            unqualifiedC.Value == 23m && JsonSerializer.Serialize(unqualifiedC) == "23",
+            "Bare numbers do not silently acquire Celsius units");
+        Check(JsonSerializer.Serialize(
+            JsonSerializer.Deserialize<CddaTemperature>("\"23\"")) == "\"23\"",
+            "Unitless string retains string source shape");
+        var rejectedTemp = false;
+        try { JsonSerializer.Deserialize<CddaTemperature>("\"7 kJ\""); }
+        catch (JsonException) { rejectedTemp = true; }
+        Check(rejectedTemp, "Temperature rejects incompatible physical dimensions");
+        var seedTemperature = (ItemDefinition)CddaRecordParser.Default.Parse(
+            """{"type":"ITEM","id":"seed_temperature","subtypes":["SEED"],"growth_temp":"-23 C"}""");
+        Check(seedTemperature.SeedData?.GrowthTemperature?.Celsius == -23m,
+            "Seed growth temperatures use the dedicated value type");
+        var edible = (ItemDefinition)CddaRecordParser.Default.Parse(
+            """{"type":"ITEM","id":"edible_freezing","subtypes":["COMESTIBLE"],"freezing_point":-8}""");
+        Check(edible.ComestibleData?.FreezingPoint?.Celsius == -8m &&
+            edible.ComestibleData.FreezingPointCelsius == -8m,
+            "Numeric freezing point retains its documented Celsius semantics");
+
         Console.WriteLine("Typed measurement value tests passed.");
     }
 

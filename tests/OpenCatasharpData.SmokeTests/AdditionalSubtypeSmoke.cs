@@ -27,7 +27,7 @@ internal static class AdditionalSubtypeSmoke
             seed.SeedData.Fruit == "blackberries" &&
             seed.SeedData.ProducesSeeds == false &&
             seed.SeedData.Byproducts?.Single() == "withered" &&
-            seed.SeedData.GrowthTemperature?.Text == "7 C" &&
+            seed.SeedData.GrowthTemperature?.Celsius == 7m &&
             seed.SeedData.RequiredTerrainFlag == "PLANTABLE" &&
             seed.SeedData.GrowthStages?[1]["GROWTH_SEEDLING"].Days == 10m &&
             seed.ComestibleData?.Calories == 1m,
