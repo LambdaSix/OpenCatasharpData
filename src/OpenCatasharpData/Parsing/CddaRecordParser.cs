@@ -220,6 +220,7 @@ public static class CddaDefaultHandlers
         new JsonDefinitionHandler<ItemCategoryDefinition>(record => TypeIs(record, "ITEM_CATEGORY")),
         new JsonDefinitionHandler<AmmunitionTypeDefinition>(record => TypeIs(record, "ammunition_type")),
         new JsonDefinitionHandler<RecipeDefinition>(record => TypeIs(record, "recipe")),
+        new JsonDefinitionHandler<AmmoEffectDefinition>(record => TypeIs(record, "ammo_effect")),
         new JsonDefinitionHandler<MonsterDefinition>(record => TypeIs(record, "MONSTER"))
     ];
 
