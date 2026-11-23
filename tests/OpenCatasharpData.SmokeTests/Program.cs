@@ -397,6 +397,7 @@ CompositionSmoke.Run();
 ArmorSmoke.Run();
 WeaponSmoke.Run();
 AdditionalSubtypeSmoke.Run();
+SupplementaryFieldsSmoke.Run();
 AmmoEffectSmoke.Run();
 await ResolutionSmoke.RunAsync();
 
@@ -434,6 +435,7 @@ if (args.Length == 2 && args[0] == "--scan-dir")
         await WeaponSmoke.RunPinnedForkAsync(scanDirectory);
         await AmmoEffectSmoke.RunPinnedForkAsync(scanDirectory);
         await AdditionalSubtypeSmoke.RunPinnedForkAsync(scanDirectory);
+        await SupplementaryFieldsSmoke.RunPinnedForkAsync(scanDirectory);
     }
 }
 

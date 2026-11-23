@@ -102,6 +102,11 @@ public sealed class ComestibleData
     [JsonPropertyName("freezing_point")]
     public decimal? FreezingPointCelsius { get; set; }
 
+    /// <summary>Strongly typed Celsius view of CDDA's numeric freezing_point field.</summary>
+    [JsonIgnore]
+    public CddaTemperature? FreezingPoint => FreezingPointCelsius is { } c
+        ? CddaTemperature.FromCelsius(c) : null;
+
     [JsonPropertyName("cooks_like")]
     public string? CooksLike { get; set; }
 
