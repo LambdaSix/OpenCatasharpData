@@ -295,9 +295,57 @@ continue to expose these slots without deferred JSON parsing.
 Composite SEED + COMESTIBLE items retain both components.
 
 These models represent authored source fields, not game-calculated defaults
-or full C++ inheritance. Complex temperatures and some effect payloads remain
-CddaScalar/extension data pending dedicated models; unknown fields remain intact.
+or full C++ inheritance. Arbitrary effect logic, memory-size units and
+mod-defined values remain extensible without guessing their game semantics.
 
+## Temperature, artifact effects and complete top-level ITEM coverage
+
+**CddaTemperature** is a readonly, eagerly parsed absolute-temperature value
+type. It understands C, mC, F and K (including Celsius/Fahrenheit names
+and degree-sign spellings) and normalises explicit units to degrees Celsius.
+Conversions and equality are dimension-aware, preserving the original
+JSON number/string spelling. Unitless values are not silently interpreted
+as Celsius; invalid suffixes raise JsonException. These formulas represent
+absolute temperatures, not temperature differences.
+
+~~~csharp
+var temp = JsonSerializer.Deserialize<CddaTemperature>("\"7 C\"");
+decimal? celsius = temp.Celsius;         // 7
+decimal? kelvin = temp.Kelvin;           // 280.15
+decimal? milliC = temp.MilliCelsius;     // 7000
+
+var seed = (ItemDefinition)CddaRecordParser.Default.Parse(
+    """{"type":"ITEM","id":"seed","subtypes":["SEED"],"growth_temp":"-23 C"}""");
+decimal? seedCelsius = seed.SeedData?.GrowthTemperature?.Celsius; // -23
+~~~
+
+SeedData.GrowthTemperature is now CddaTemperature. The documented numeric
+COMESTIBLE freezing_point remains exposed as FreezingPointCelsius for source
+compatibility; ComestibleData.FreezingPoint additionally provides a
+dimension-safe Celsius view.
+
+ArtifactData.PassiveEffects now also models referenced enchantment IDs and
+inline mutation lists. CddaArtifactPassiveEffect.IsReference distinguishes
+the reference form from an inline effect, while inline values, conditions,
+activation context and unknown extra keys remain available.
+
+The scanner inventories **all** formerly missing top-level fields. Newly
+mapped properties include snippet categories (string or inline-object arrays),
+item proficiencies, charged qualities, countdown intervals/actions, repairs,
+lighting, memory-card metadata, electronic data sizes and ports, source
+variables, item transformations and the long tail of specialised item fields.
+Some open-ended dictionaries are deliberately Dictionary<string, JsonElement>
+because their keys and value types are mod-defined, not an agreed fixed schema.
+
+CddaSnippetCategory and CddaItemAction preserve the original source shape
+(category name versus inline snippets; singular action string versus object).
+CddaItemProficiency, CddaMemoryCard and CddaItemTransformation provide
+strongly typed known members plus JSON extension data where appropriate.
+
+**Coverage is field-name based, not proof of full nested schema or
+gameplay semantics.** Unknown nested use-action payloads and C++ inheritance
+defaults remain separate work. See tools/schema_coverage.py for the complete
+source-field inventory and the pinned-fork validation workflow.
 ## Typed physical measurements
 
 Dimension-aware value types replace unstructured CddaScalar values where the JSON schema defines physical units. They are readonly record structs with System.Text.Json converters and eager conversions. A duration's m suffix means **minutes**, while a length's m suffix means **metres**.
