@@ -135,6 +135,20 @@ public sealed class JsonItemSubtypeHandler<TSlot> : ICddaItemSubtypeHandler wher
         item.SetSubtype(slot);
         if (slot is ArmorData armor)
             armor.Sections = item.Armor;
+        if (slot is GunData gun)
+        {
+            gun.RangedDamage = item.RangedDamage;
+            gun.BarrelLength = item.BarrelLength;
+        }
+        if (slot is AmmoData ammo)
+        {
+            ammo.AmmoTypes = item.AmmoTypes;
+            ammo.ThrownDamage = item.ThrownDamage;
+            ammo.ExplodeInFire = item.ExplodeInFire;
+            ammo.Explosion = item.Explosion;
+        }
+        if (slot is MagazineData magazine) magazine.AmmoTypes = item.AmmoTypes;
+        if (slot is GunModData gunMod) gunMod.BarrelLength = item.BarrelLength;
     }
 }
 
@@ -212,6 +226,7 @@ public static class CddaDefaultHandlers
         new JsonDefinitionHandler<ItemCategoryDefinition>(record => TypeIs(record, "ITEM_CATEGORY")),
         new JsonDefinitionHandler<AmmunitionTypeDefinition>(record => TypeIs(record, "ammunition_type")),
         new JsonDefinitionHandler<RecipeDefinition>(record => TypeIs(record, "recipe")),
+        new JsonDefinitionHandler<AmmoEffectDefinition>(record => TypeIs(record, "ammo_effect")),
         new JsonDefinitionHandler<MonsterDefinition>(record => TypeIs(record, "MONSTER"))
     ];
 

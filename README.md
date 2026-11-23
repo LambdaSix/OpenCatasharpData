@@ -184,6 +184,56 @@ The schema scan and pinned-CDDA deserialization probe run on every relevant
 change. BenchmarkDotNet includes a new ParseArmorDetailed scenario, without
 changing the input to the existing ParseArmor baseline.
 
+## Complete weapon, ammunition and projectile-effect models
+
+GunData, AmmoData, MagazineData and GunModData now expose the documented
+weapon and ammunition source fields as eagerly deserialized values. Item
+subtype composition still allows mixed GUN, AMMO, MAGAZINE and GUNMOD items.
+Standalone records with type=ammo_effect now use AmmoEffectDefinition rather
+than UnknownDefinition, with typed AoE fields, trails, explosions, on-hit
+status effects, spells and EOC references.
+
+```csharp
+var item = (ItemDefinition)CddaRecordParser.Default.Parse(gunJson);
+decimal? recoil = item.GunData?.Recoil;
+int? batteryCost = item.GunData?.FiringRequirements?["DEFAULT"][1].Quantity;
+decimal? barrelMm = item.GunData?.BarrelLength?.Millimetres;
+
+var ammo = (ItemDefinition)CddaRecordParser.Default.Parse(ammoJson);
+decimal? bulletDamage = ammo.AmmoData?.Damage?.Amount;
+decimal? dispersion = ammo.AmmoData?.DispersionModifier?
+    .ByBarrel?[0].Dispersion;
+
+var effect = (AmmoEffectDefinition)CddaRecordParser.Default.Parse(effectJson);
+decimal? explosionPower = effect.Explosion?.Power;
+```
+
+Shared composition properties (notably ranged_damage, barrel_length,
+ammo_type and faults) remain on ItemDefinition. GunData and MagazineData
+expose read-side aliases to those eagerly parsed common properties, without
+reparsing on access.
+
+New reusable models include CddaFiringCost for per-pocket firing costs,
+CddaPocketModifier for installed consumption/capacity changes,
+CddaMagazineAdaptor for the nested magazine tuple format,
+CddaAmmoDispersion for numeric or barrel-dependent accuracy,
+CddaExplosion/CddaShrapnel for explosion and projectile effects,
+and CddaProjectileField/CddaProjectileStatusEffect for ammo_effect records.
+
+Documented numeric shorthand (for example ranged_damage: 0 and
+explosion.shrapnel: 0), arrays of gun-mode flags, and both ammo-dispersion
+formats are supported and their original JSON shapes are preserved by the
+corresponding converters. Unknown nested keys remain preserved via
+JsonExtensionData.
+
+Energy values are currently represented by CddaScalar, retaining
+their source units such as kJ without assuming a default. The models
+represent source data only; they do not calculate a gun's final statistics
+after combining all installed mods or replay CDDA's C++ combat logic.
+
+The pinned-fork probe tests all core item JSON files and the standalone
+ammo_effects.json records. This does not resolve all inherited items
+across other folders or implement semantic linkage for effect IDs.
 ## Typed physical measurements
 
 Dimension-aware value types replace unstructured CddaScalar values where the JSON schema defines physical units. They are readonly record structs with System.Text.Json converters and eager conversions. A duration's m suffix means **minutes**, while a length's m suffix means **metres**.

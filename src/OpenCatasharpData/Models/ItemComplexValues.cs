@@ -241,6 +241,13 @@ public sealed class CddaBarrelDamage
 /// <summary>Projectile damage description, with a typed barrel-damage curve.</summary>
 public sealed class CddaDamage
 {
+    // Ranged damage may use the legacy numeric shorthand (e.g. "ranged_damage": 0).
+    [JsonIgnore]
+    public bool WasNumber { get; internal set; }
+
+    [JsonIgnore]
+    public bool WasSingleObject { get; internal set; }
+
     [JsonPropertyName("damage_type")]
     public string? DamageType { get; set; }
 
@@ -277,14 +284,27 @@ public sealed class CddaDamageListJsonConverter : JsonConverter<List<CddaDamage>
                     ?? throw new JsonException("Invalid ranged damage entry."));
         }
         else if (root.ValueKind == JsonValueKind.Object)
-            result.Add(root.Deserialize<CddaDamage>(options)
-                ?? throw new JsonException("Invalid ranged damage."));
-        else throw new JsonException("Expected ranged_damage as an object or array.");
+        {
+            var value = root.Deserialize<CddaDamage>(options)
+                ?? throw new JsonException("Invalid ranged damage.");
+            value.WasSingleObject = true;
+            result.Add(value);
+        }
+        else if (root.ValueKind == JsonValueKind.Number)
+            result.Add(new CddaDamage { Amount = root.GetDecimal(), WasNumber = true });
+        else throw new JsonException("Expected ranged_damage as a number, object or array.");
         return result;
     }
 
-    public override void Write(Utf8JsonWriter writer, List<CddaDamage> value, JsonSerializerOptions options) =>
-        JsonSerializer.Serialize(writer, value, options);
+    public override void Write(Utf8JsonWriter writer, List<CddaDamage> value, JsonSerializerOptions options)
+    {
+        if (value.Count == 1 && value[0].WasNumber && value[0].Amount is { } amount)
+            writer.WriteNumberValue(amount);
+        else if (value.Count == 1 && value[0].WasSingleObject)
+            JsonSerializer.Serialize(writer, value[0], options);
+        else
+            JsonSerializer.Serialize(writer, value, options);
+    }
 }
 
 /// <summary>One tuple of gun mode ID, display label, shots, and optional flag.</summary>
@@ -295,6 +315,7 @@ public sealed class CddaGunMode
     public string Label { get; set; } = string.Empty;
     public int Shots { get; set; }
     public string? Flag { get; set; }
+    public List<string>? Flags { get; set; }
     public List<JsonElement>? ExtraValues { get; set; }
 }
 
@@ -315,7 +336,13 @@ public sealed class CddaGunModeJsonConverter : JsonConverter<CddaGunMode>
             Label = array[1].GetString()!,
             Shots = array[2].GetInt32(),
             Flag = array.GetArrayLength() > 3 && array[3].ValueKind == JsonValueKind.String
-                ? array[3].GetString() : null
+                ? array[3].GetString() : null,
+            Flags = array.GetArrayLength() > 3 && array[3].ValueKind == JsonValueKind.Array
+                ? array[3].EnumerateArray().Select(flag =>
+                    flag.ValueKind == JsonValueKind.String
+                        ? flag.GetString()!
+                        : throw new JsonException("Gun mode flags must be strings.")).ToList()
+                : null
         };
         if (array.GetArrayLength() > 4)
             result.ExtraValues = array.EnumerateArray().Skip(4).Select(e => e.Clone()).ToList();
@@ -328,7 +355,8 @@ public sealed class CddaGunModeJsonConverter : JsonConverter<CddaGunMode>
         writer.WriteStringValue(value.Id);
         writer.WriteStringValue(value.Label);
         writer.WriteNumberValue(value.Shots);
-        if (value.Flag is not null) writer.WriteStringValue(value.Flag);
+        if (value.Flags is not null) JsonSerializer.Serialize(writer, value.Flags, options);
+        else if (value.Flag is not null) writer.WriteStringValue(value.Flag);
         if (value.ExtraValues is not null)
             foreach (var item in value.ExtraValues) item.WriteTo(writer);
         writer.WriteEndArray();
@@ -352,6 +380,18 @@ public sealed class CddaConditionalName
 
 public sealed class CddaFault
 {
+    [JsonPropertyName("weight")]
+    public decimal? Weight { get; set; }
+
+    [JsonPropertyName("weight_override")]
+    public decimal? WeightOverride { get; set; }
+
+    [JsonPropertyName("weight_add")]
+    public decimal? WeightAdd { get; set; }
+
+    [JsonPropertyName("weight_mult")]
+    public decimal? WeightMultiplier { get; set; }
+
     [JsonPropertyName("fault")]
     public string? Fault { get; set; }
 
