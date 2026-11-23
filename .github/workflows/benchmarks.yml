@@ -39,6 +39,13 @@ jobs:
         run: |
           if git cat-file -e "$BASE_SHA:benchmarks/OpenCatasharpData.Benchmarks/OpenCatasharpData.Benchmarks.csproj" 2>/dev/null; then
             git worktree add --detach "$RUNNER_TEMP/baseline-source" "$BASE_SHA"
+            # Legacy baseline revisions sealed a BenchmarkDotNet class, which
+            # prevents the entire suite from producing reports. Correct only
+            # its harness declaration inside the isolated baseline worktree.
+            BASE_BENCH="$RUNNER_TEMP/baseline-source/benchmarks/OpenCatasharpData.Benchmarks/ResolutionBenchmarks.cs"
+            if [ -f "$BASE_BENCH" ]; then
+              sed -i 's/public sealed class ResolutionBenchmarks/public class ResolutionBenchmarks/' "$BASE_BENCH"
+            fi
             echo "HAS_BENCHMARK_BASELINE=true" >> "$GITHUB_ENV"
           else
             echo "HAS_BENCHMARK_BASELINE=false" >> "$GITHUB_ENV"

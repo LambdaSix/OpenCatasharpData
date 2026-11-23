@@ -10,7 +10,7 @@ namespace OpenCatasharpData.Benchmarks;
 /// </summary>
 [MemoryDiagnoser]
 [JsonExporterAttribute.Full]
-public sealed class ResolutionBenchmarks
+public class ResolutionBenchmarks
 {
     private CddaSourceRecord[] _records = null!;
     private CddaItemResolver _resolver = null!;
