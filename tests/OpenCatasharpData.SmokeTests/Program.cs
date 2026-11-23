@@ -395,6 +395,7 @@ finally
 MeasurementSmoke.Run();
 CompositionSmoke.Run();
 ArmorSmoke.Run();
+WeaponSmoke.Run();
 await ResolutionSmoke.RunAsync();
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");
@@ -425,7 +426,11 @@ if (args.Length == 2 && args[0] == "--scan-dir")
     Console.WriteLine($"Full-fork probe: {scannedFiles} successfully parsed files, " +
                       $"{scannedDefinitions} records, {failures} failed files.");
     if (failures != 0) Environment.ExitCode = 1;
-    else await ResolutionSmoke.RunPinnedForkExamplesAsync(scanDirectory);
+    else
+    {
+        await ResolutionSmoke.RunPinnedForkExamplesAsync(scanDirectory);
+        await WeaponSmoke.RunPinnedForkAsync(scanDirectory);
+    }
 }
 
 

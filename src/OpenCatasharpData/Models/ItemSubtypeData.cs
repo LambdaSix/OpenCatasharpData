@@ -161,51 +161,140 @@ public sealed class ToolData
     public int? TurnsPerCharge { get; set; }
 }
 
+/// <summary>Gun-specific statistics and firing/energy requirements.</summary>
 public sealed class GunData
 {
+    [JsonIgnore]
+    public List<CddaDamage>? RangedDamage { get; internal set; }
+
+    [JsonIgnore]
+    public CddaLength? BarrelLength { get; internal set; }
+
     [JsonPropertyName("skill")]
     public string? Skill { get; set; }
 
+    [JsonPropertyName("ammo")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? Ammo { get; set; }
+
+    [JsonPropertyName("range")]
+    public decimal? Range { get; set; }
+
     [JsonPropertyName("dispersion")]
-    public int? Dispersion { get; set; }
+    public decimal? Dispersion { get; set; }
+
+    [JsonPropertyName("sight_dispersion")]
+    public decimal? SightDispersion { get; set; }
+
+    [JsonPropertyName("recoil")]
+    public decimal? Recoil { get; set; }
+
+    [JsonPropertyName("min_strength")]
+    public int? MinimumStrength { get; set; }
+
+    [JsonPropertyName("min_cycle_recoil")]
+    public decimal? MinimumCycleRecoil { get; set; }
 
     [JsonPropertyName("durability")]
     public int? Durability { get; set; }
 
-    [JsonPropertyName("reload")]
-    public int? ReloadTime { get; set; }
+    [JsonPropertyName("gun_jam_mult")]
+    public decimal? GunJamMultiplier { get; set; }
+
+    [JsonPropertyName("blackpowder_tolerance")]
+    public decimal? BlackpowderTolerance { get; set; }
+
+    [JsonPropertyName("clip_size")]
+    public int? ClipSize { get; set; }
 
     [JsonPropertyName("handling")]
-    public int? Handling { get; set; }
+    public decimal? Handling { get; set; }
+
+    [JsonPropertyName("energy_drain")]
+    public CddaScalar? EnergyDrain { get; set; }
+
+    [JsonPropertyName("heat_per_shot")]
+    public decimal? HeatPerShot { get; set; }
+
+    [JsonPropertyName("cooling_value")]
+    public decimal? CoolingValue { get; set; }
+
+    [JsonPropertyName("overheat_threshold")]
+    public decimal? OverheatThreshold { get; set; }
+
+    [JsonPropertyName("ammo_to_fire")]
+    public int? AmmoToFire { get; set; }
+
+    [JsonPropertyName("firing_requirements")]
+    public Dictionary<string, List<CddaFiringCost>>? FiringRequirements { get; set; }
 
     [JsonPropertyName("modes")]
     public List<CddaGunMode>? Modes { get; set; }
+
+    [JsonPropertyName("reload")]
+    public int? ReloadTime { get; set; }
+
+    [JsonPropertyName("reload_noise")]
+    public CddaText? ReloadNoise { get; set; }
+
+    [JsonPropertyName("reload_noise_volume")]
+    public decimal? ReloadNoiseVolume { get; set; }
+
+    [JsonPropertyName("built_in_mods")]
+    public List<string>? BuiltInMods { get; set; }
+
+    [JsonPropertyName("default_mods")]
+    public List<string>? DefaultMods { get; set; }
+
+    [JsonPropertyName("barrel_volume")]
+    public CddaVolume? BarrelVolume { get; set; }
 
     [JsonPropertyName("valid_mod_locations")]
     [JsonConverter(typeof(CddaNamedAmountsConverter))]
     public List<CddaNamedAmount>? ValidModLocations { get; set; }
 
-    [JsonPropertyName("clip_size")]
-    public int? ClipSize { get; set; }
-
-    [JsonPropertyName("ammo")]
-    [JsonConverter(typeof(CddaStringListConverter))]
-    public List<string>? Ammo { get; set; }
+    [JsonPropertyName("loudness")]
+    public decimal? Loudness { get; set; }
 }
 
+/// <summary>Ammunition performance, damage and projectile statistics.</summary>
 public sealed class AmmoData
 {
+    [JsonIgnore]
+    public List<string>? AmmoTypes { get; internal set; }
+
     [JsonPropertyName("damage")]
     public CddaDamage? Damage { get; set; }
 
     [JsonPropertyName("shot_damage")]
     public CddaDamage? ShotDamage { get; set; }
 
+    [JsonPropertyName("thrown_damage")]
+    public CddaDamage? ThrownDamage { get; set; }
+
     [JsonPropertyName("projectile_count")]
     public int? ProjectileCount { get; set; }
 
     [JsonPropertyName("dispersion")]
-    public int? Dispersion { get; set; }
+    public decimal? Dispersion { get; set; }
+
+    [JsonPropertyName("dispersion_modifier")]
+    public CddaAmmoDispersion? DispersionModifier { get; set; }
+
+    [JsonPropertyName("shot_spread")]
+    public decimal? ShotSpread { get; set; }
+
+    [JsonPropertyName("shot_counter")]
+    public int? ShotCounter { get; set; }
+
+    [JsonPropertyName("critical_multiplier")]
+    public decimal? CriticalMultiplier { get; set; }
+
+    [JsonPropertyName("recovery_chance")]
+    public decimal? RecoveryChance { get; set; }
+
+    [JsonPropertyName("show_stats")]
+    public bool? ShowStats { get; set; }
 
     [JsonPropertyName("effects")]
     public List<string>? Effects { get; set; }
@@ -223,19 +312,41 @@ public sealed class AmmoData
     public int? StackSize { get; set; }
 
     [JsonPropertyName("range")]
-    public int? Range { get; set; }
+    public decimal? Range { get; set; }
 
     [JsonPropertyName("casing")]
     public string? Casing { get; set; }
+
+    [JsonPropertyName("explode_in_fire")]
+    public bool? ExplodeInFire { get; set; }
+
+    [JsonPropertyName("explosion")]
+    public CddaExplosion? Explosion { get; set; }
 }
 
+/// <summary>Magazine capacity, default loading and jam characteristics.</summary>
 public sealed class MagazineData
 {
+    [JsonIgnore]
+    public List<string>? AmmoTypes { get; internal set; }
+
     [JsonPropertyName("capacity")]
     public int? Capacity { get; set; }
 
+    [JsonPropertyName("count")]
+    public int? Count { get; set; }
+
+    [JsonPropertyName("default_ammo")]
+    public string? DefaultAmmo { get; set; }
+
     [JsonPropertyName("reload_time")]
     public int? ReloadTime { get; set; }
+
+    [JsonPropertyName("mag_jam_mult")]
+    public decimal? MagazineJamMultiplier { get; set; }
+
+    [JsonPropertyName("linkage")]
+    public string? Linkage { get; set; }
 }
 
 public sealed class BookData
@@ -265,20 +376,155 @@ public sealed class BookData
     public CddaDuration? ReadingTime { get; set; }
 }
 
+/// <summary>Weapon attachment modifiers, compatibility rules, and firing-mode changes.</summary>
 public sealed class GunModData
 {
+    [JsonIgnore]
+    public CddaLength? BarrelLength { get; internal set; }
+
     [JsonPropertyName("location")]
     public string? Location { get; set; }
 
     [JsonPropertyName("mod_targets")]
     public List<string>? ModTargets { get; set; }
 
-    [JsonPropertyName("dispersion_modifier")]
-    public int? DispersionModifier { get; set; }
-
-    [JsonPropertyName("handling_modifier")]
-    public int? HandlingModifier { get; set; }
-
     [JsonPropertyName("install_time")]
     public CddaDuration? InstallTime { get; set; }
+
+    [JsonPropertyName("acceptable_ammo")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? AcceptableAmmo { get; set; }
+
+    [JsonPropertyName("ammo_modifier")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? AmmoModifier { get; set; }
+
+    [JsonPropertyName("magazine_adaptor")]
+    public List<CddaMagazineAdaptor>? MagazineAdaptors { get; set; }
+
+    [JsonPropertyName("pocket_mods")]
+    public List<CddaPocket>? PocketMods { get; set; }
+
+    [JsonPropertyName("consumption_mods")]
+    public List<CddaPocketModifier>? ConsumptionMods { get; set; }
+
+    [JsonPropertyName("capacity_mods")]
+    public List<CddaPocketModifier>? CapacityMods { get; set; }
+
+    [JsonPropertyName("damage_modifier")]
+    public CddaDamage? DamageModifier { get; set; }
+
+    [JsonPropertyName("dispersion_modifier")]
+    public decimal? DispersionModifier { get; set; }
+
+    [JsonPropertyName("loudness_modifier")]
+    public decimal? LoudnessModifier { get; set; }
+
+    [JsonPropertyName("loudness_multiplier")]
+    public decimal? LoudnessMultiplier { get; set; }
+
+    [JsonPropertyName("range_modifier")]
+    public decimal? RangeModifier { get; set; }
+
+    [JsonPropertyName("range_multiplier")]
+    public decimal? RangeMultiplier { get; set; }
+
+    [JsonPropertyName("integral_longest_side")]
+    public CddaLength? IntegralLongestSide { get; set; }
+
+    [JsonPropertyName("overwrite_min_cycle_recoil")]
+    public decimal? OverwriteMinimumCycleRecoil { get; set; }
+
+    [JsonPropertyName("reload_noise")]
+    public CddaText? ReloadNoise { get; set; }
+
+    [JsonPropertyName("reload_noise_volume")]
+    public decimal? ReloadNoiseVolume { get; set; }
+
+    [JsonPropertyName("aim_speed_modifier")]
+    public decimal? AimSpeedModifier { get; set; }
+
+    [JsonPropertyName("add_mod")]
+    [JsonConverter(typeof(CddaNamedAmountsConverter))]
+    public List<CddaNamedAmount>? AddMod { get; set; }
+
+    [JsonPropertyName("energy_drain_multiplier")]
+    public decimal? EnergyDrainMultiplier { get; set; }
+
+    [JsonPropertyName("energy_drains_multiplier")]
+    public decimal? EnergyDrainsMultiplier { get; set; }
+
+    [JsonPropertyName("field_of_view")]
+    public decimal? FieldOfView { get; set; }
+
+    [JsonPropertyName("shot_spread_multiplier_modifier")]
+    public decimal? ShotSpreadMultiplierModifier { get; set; }
+
+    [JsonPropertyName("energy_drain_modifier")]
+    public CddaScalar? EnergyDrainModifier { get; set; }
+
+    [JsonPropertyName("reload_modifier")]
+    public decimal? ReloadModifier { get; set; }
+
+    [JsonPropertyName("min_str_required_mod")]
+    public int? MinimumStrengthModifier { get; set; }
+
+    [JsonPropertyName("aim_speed")]
+    public decimal? AimSpeed { get; set; }
+
+    [JsonPropertyName("ammo_effects")]
+    public List<string>? AmmoEffects { get; set; }
+
+    [JsonPropertyName("consume_chance")]
+    public decimal? ConsumeChance { get; set; }
+
+    [JsonPropertyName("consume_divisor")]
+    public decimal? ConsumeDivisor { get; set; }
+
+    [JsonPropertyName("handling_modifier")]
+    public decimal? HandlingModifier { get; set; }
+
+    [JsonPropertyName("mode_modifier")]
+    public List<CddaGunMode>? ModeModifier { get; set; }
+
+    [JsonPropertyName("hide_modes")]
+    public List<string>? HideModes { get; set; }
+
+    [JsonPropertyName("mode_firing_requirements")]
+    public Dictionary<string, List<CddaFiringCost>>? ModeFiringRequirements { get; set; }
+
+    [JsonPropertyName("overheat_threshold_modifier")]
+    public decimal? OverheatThresholdModifier { get; set; }
+
+    [JsonPropertyName("overheat_threshold_multiplier")]
+    public decimal? OverheatThresholdMultiplier { get; set; }
+
+    [JsonPropertyName("cooling_value_modifier")]
+    public decimal? CoolingValueModifier { get; set; }
+
+    [JsonPropertyName("cooling_value_multiplier")]
+    public decimal? CoolingValueMultiplier { get; set; }
+
+    [JsonPropertyName("heat_per_shot_modifier")]
+    public decimal? HeatPerShotModifier { get; set; }
+
+    [JsonPropertyName("heat_per_shot_multiplier")]
+    public decimal? HeatPerShotMultiplier { get; set; }
+
+    [JsonPropertyName("is_bayonet")]
+    public bool? IsBayonet { get; set; }
+
+    [JsonPropertyName("is_visible_when_installed")]
+    public bool? VisibleWhenInstalled { get; set; }
+
+    [JsonPropertyName("blacklist_slot")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? BlacklistSlots { get; set; }
+
+    [JsonPropertyName("blacklist_mod")]
+    [JsonConverter(typeof(CddaStringListConverter))]
+    public List<string>? BlacklistMods { get; set; }
+
+    [JsonPropertyName("to_hit_mod")]
+    public decimal? ToHitModifier { get; set; }
 }
