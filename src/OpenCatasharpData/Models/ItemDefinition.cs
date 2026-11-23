@@ -140,6 +140,9 @@ public sealed class ItemDefinition : CddaDefinition
     [JsonConverter(typeof(CddaUseActionsJsonConverter))]
     public List<CddaUseAction>? DropActions { get; set; }
 
+    [JsonPropertyName("power_draw")]
+    public CddaPower? PowerDraw { get; set; }
+
     [JsonPropertyName("integral_volume")]
     public CddaVolume? IntegralVolume { get; set; }
 
