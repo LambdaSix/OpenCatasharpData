@@ -399,6 +399,7 @@ It inventories field names, observed shapes, subtype frequency and missing neste
 
 - [Baseline coverage report](reports/item-schema-coverage.baseline.md): 85.4% of authored top-level ITEM field occurrences mapped to a DTO property.
 - [Post-expansion coverage report](reports/item-schema-coverage.after.md): 96.9% of authored top-level ITEM field occurrences mapped (pre-composition baseline).
+- [Current pinned-fork coverage report](reports/item-schema-coverage.current.md): 100.0% of authored top-level ITEM fields mapped (228 field names, 140,675 occurrences); CI rejects coverage regressions.
 - Real-data validation: **489/489 JSON files and 10,525/10,525 definitions parsed** successfully from the pinned `data/json/items` directory.
 
 The percentage measures **declared field-name mapping**, not semantic correctness or inheritance resolution.
