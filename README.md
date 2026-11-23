@@ -81,8 +81,9 @@ component for each recognised declared subtype**. It is not classified into a
 single derived class anymore. Combined ARMOR/TOOL/COMESTIBLE items expose all
 three typed slots; unknown subtype names remain in the Subtypes list.
 
-The built-in slot properties are ArmorData, ComestibleData, ToolData, GunData,
-AmmoData, MagazineData, BookData and GunModData. ItemDefinition.GetSubtype<T>()
+The built-in slot properties include ArmorData, ComestibleData, ToolData,
+GunData, AmmoData, MagazineData, BookData, GunModData, plus the ten specialised
+item categories listed below. ItemDefinition.GetSubtype<T>()
 works for built-in and custom slots, with no deferred JSON parsing.
 
 ~~~csharp
@@ -133,8 +134,8 @@ ammo types) remain on ItemDefinition.
 Shared values use eager System.Text.Json converters:
 
 - CddaText for string or translatable-object names
-- CddaVolume, CddaLength, CddaMass and CddaDuration for dimension-safe quantities
-- CddaScalar for values not yet classified into dedicated dimensions (including currency and power)
+- CddaVolume, CddaLength, CddaMass, CddaDuration, CddaEnergy and CddaPower for dimension-safe quantities
+- CddaScalar for values not yet classified into dedicated dimensions (including currency and temperature)
 - CddaMaterialPart for string and object material entries
 - CddaQuality and CddaVitamin for mixed-shape qualities and vitamins
 - CddaArmorSection and CddaPocket for nested typed objects
@@ -234,6 +235,69 @@ after combining all installed mods or replay CDDA's C++ combat logic.
 The pinned-fork probe tests all core item JSON files and the standalone
 ammo_effects.json records. This does not resolve all inherited items
 across other folders or implement semantic linkage for effect IDs.
+## Dedicated electrical units and remaining ITEM subtypes
+
+Energy and power are different readonly value types, using eager System.Text.Json
+converters. **Energy** is measured in joules; **power** is a rate measured in
+watts. A watt cannot be accidentally interpreted as a joule.
+
+| Value type | Recognised suffixes | Normalised quantity |
+|---|---|---|
+| CddaEnergy | mJ, J, kJ, MJ, GJ, Wh, kWh | Joules |
+| CddaPower | mW, W, kW, MW | Watts |
+
+Case-sensitive SI prefixes distinguish **mJ from MJ** and **mW from MW**.
+Bare JSON numbers remain unqualified, and explicit-unit conversions return
+null instead of guessing. The original JSON string is preserved during
+serialisation. Unsupported or dimensionally incorrect suffixes throw JsonException.
+
+~~~csharp
+var energy = CddaEnergy.FromKilojoules(2);
+decimal? joules = energy.Joules;            // 2000
+
+var power = CddaPower.FromKilowatts(1.5m);
+decimal? watts = power.Watts;              // 1500
+
+var gun = (ItemDefinition)CddaRecordParser.Default.Parse(
+    """{"type":"ITEM","id":"energy_gun","subtypes":["GUN"],
+        "energy_drain":"2 kJ","power_draw":"100 W"}""");
+decimal? shotJoules = gun.GunData?.EnergyDrain?.Joules; // 2000
+decimal? drawWatts = gun.PowerDraw?.Watts;             // 100
+~~~
+
+Previously generic energy scalars are now CddaEnergy in
+GunData.EnergyDrain and GunModData.EnergyDrainModifier.
+The shared ITEM field power_draw uses CddaPower.
+
+All ten previously unsupported ITEM subtype categories are now independent
+eagerly loaded composable components:
+
+| CDDA subtype | Component | Typed source properties |
+|---|---|---|
+| BIONIC_ITEM | BionicItemData | Installation difficulty and upgrade flag |
+| SEED | SeedData | Plant/fruit names, harvest byproducts, growth stages and temperature |
+| BREWABLE | BrewableData | Brewing time and resulting items |
+| COMPOSTABLE | CompostableData | Compost time and resulting items |
+| MILLING | MillingData | Milled product and associated recipe |
+| ENGINE | EngineData | Engine subtype marker; shared fields stay on ItemDefinition |
+| WHEEL | WheelData | Wheel diameter and width |
+| PET_ARMOR | PetArmorData | Pet volume limits, body type and material protection |
+| TOOLMOD | ToolModData | Ammo compatibility, magazine adapters and pocket modifiers |
+| ARTIFACT | ArtifactData | Passive enchantment conditions and numeric adjustments |
+
+The CddaItemYieldSet / CddaItemYield models accept array and object-map
+result styles, for example an array containing product IDs and
+{"item":"yeast","count":3}, or the map {"juice":2,"yeast":3}.
+They preserve the original collection shape on serialisation.
+
+ItemDefinition.GetSubtype<T>() and CddaDataCatalog.GetItemsWith<T>()
+continue to expose these slots without deferred JSON parsing.
+Composite SEED + COMESTIBLE items retain both components.
+
+These models represent authored source fields, not game-calculated defaults
+or full C++ inheritance. Complex temperatures and some effect payloads remain
+CddaScalar/extension data pending dedicated models; unknown fields remain intact.
+
 ## Typed physical measurements
 
 Dimension-aware value types replace unstructured CddaScalar values where the JSON schema defines physical units. They are readonly record structs with System.Text.Json converters and eager conversions. A duration's m suffix means **minutes**, while a length's m suffix means **metres**.
