@@ -312,7 +312,7 @@ def report(stats, source_revision: str, model_revision: str):
         "| Nested path | Occurrences without matching nested DTO property |",
         "|---|---:|",
     ]
-    for name, count in stats["nested_missing"].most_common(30):
+    for name, count in stats["nested_missing"].most_common():
         lines.append(f"| {quote}{name}{quote} | {count:,} |")
     if stats["other_type_counts"]:
         lines += ["", "## Other discriminators in the item directory", "",
