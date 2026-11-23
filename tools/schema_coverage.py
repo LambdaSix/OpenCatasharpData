@@ -286,11 +286,11 @@ def report(stats, source_revision: str, model_revision: str):
     for name, count in stats["routing_counts"].most_common():
         lines.append(f"| {quote}{name}{quote} | {count:,} |")
     lines += [
-        "", "## Most frequent unmodelled item fields", "",
+        "", "## Remaining unmodelled item fields (complete inventory)", "",
         "| Field | ITEM records | Observed shapes | Example record |",
         "|---|---:|---|---|",
     ]
-    for name, count in stats["unmodelled"].most_common(35):
+    for name, count in stats["unmodelled"].most_common():
         shapes = ", ".join(f"{kind} ({amount})" for kind, amount in stats["shapes"][name].most_common())
         lines.append(
             f"| {quote}{name}{quote} | {count:,} | {shapes} | "
