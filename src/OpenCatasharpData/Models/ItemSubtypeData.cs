@@ -211,7 +211,7 @@ public sealed class GunData
     public decimal? Handling { get; set; }
 
     [JsonPropertyName("energy_drain")]
-    public CddaScalar? EnergyDrain { get; set; }
+    public CddaEnergy? EnergyDrain { get; set; }
 
     [JsonPropertyName("heat_per_shot")]
     public decimal? HeatPerShot { get; set; }
@@ -464,7 +464,7 @@ public sealed class GunModData
     public decimal? ShotSpreadMultiplierModifier { get; set; }
 
     [JsonPropertyName("energy_drain_modifier")]
-    public CddaScalar? EnergyDrainModifier { get; set; }
+    public CddaEnergy? EnergyDrainModifier { get; set; }
 
     [JsonPropertyName("reload_modifier")]
     public decimal? ReloadModifier { get; set; }

@@ -169,6 +169,16 @@ public sealed class ItemDefinition : CddaDefinition
     [JsonIgnore] public MagazineData? MagazineData => GetSubtype<MagazineData>();
     [JsonIgnore] public BookData? BookData => GetSubtype<BookData>();
     [JsonIgnore] public GunModData? GunModData => GetSubtype<GunModData>();
+    [JsonIgnore] public BionicItemData? BionicItemData => GetSubtype<BionicItemData>();
+    [JsonIgnore] public SeedData? SeedData => GetSubtype<SeedData>();
+    [JsonIgnore] public BrewableData? BrewableData => GetSubtype<BrewableData>();
+    [JsonIgnore] public CompostableData? CompostableData => GetSubtype<CompostableData>();
+    [JsonIgnore] public MillingData? MillingData => GetSubtype<MillingData>();
+    [JsonIgnore] public EngineData? EngineData => GetSubtype<EngineData>();
+    [JsonIgnore] public WheelData? WheelData => GetSubtype<WheelData>();
+    [JsonIgnore] public PetArmorData? PetArmorData => GetSubtype<PetArmorData>();
+    [JsonIgnore] public ToolModData? ToolModData => GetSubtype<ToolModData>();
+    [JsonIgnore] public ArtifactData? ArtifactData => GetSubtype<ArtifactData>();
 
     /// <summary>Get a built-in or custom typed component, without parsing JSON.</summary>
     public TSlot? GetSubtype<TSlot>() where TSlot : class =>

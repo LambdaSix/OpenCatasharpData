@@ -214,7 +214,17 @@ public static class CddaDefaultHandlers
         new JsonItemSubtypeHandler<AmmoData>("AMMO"),
         new JsonItemSubtypeHandler<MagazineData>("MAGAZINE"),
         new JsonItemSubtypeHandler<BookData>("BOOK"),
-        new JsonItemSubtypeHandler<GunModData>("GUNMOD")
+        new JsonItemSubtypeHandler<GunModData>("GUNMOD"),
+        new JsonItemSubtypeHandler<BionicItemData>("BIONIC_ITEM"),
+        new JsonItemSubtypeHandler<SeedData>("SEED"),
+        new JsonItemSubtypeHandler<BrewableData>("BREWABLE"),
+        new JsonItemSubtypeHandler<CompostableData>("COMPOSTABLE"),
+        new JsonItemSubtypeHandler<MillingData>("MILLING"),
+        new JsonItemSubtypeHandler<EngineData>("ENGINE"),
+        new JsonItemSubtypeHandler<WheelData>("WHEEL"),
+        new JsonItemSubtypeHandler<PetArmorData>("PET_ARMOR"),
+        new JsonItemSubtypeHandler<ToolModData>("TOOLMOD"),
+        new JsonItemSubtypeHandler<ArtifactData>("ARTIFACT")
     ];
 
     public static IReadOnlyList<ICddaDefinitionHandler> Create(

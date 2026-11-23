@@ -81,6 +81,41 @@ internal static class MeasurementSmoke
             as ItemDefinition;
         Check(gunmod?.GunModData?.InstallTime?.Minutes == 15m, "Gunmod installation duration typed");
 
+        var e = JsonSerializer.Deserialize<CddaEnergy>("\"2 kJ\"");
+        var sameEnergy = CddaEnergy.FromJoules(2000m);
+        Check(e.Joules == 2000m && e == sameEnergy &&
+            e.Kilojoules == 2m, "Energy units convert and compare by joules");
+        Check(JsonSerializer.Serialize(e) == "\"2 kJ\"" &&
+            JsonSerializer.Serialize(CddaEnergy.FromWattHours(1m)) == "\"1 Wh\"",
+            "Energy unit source and factory round trips");
+        Check(JsonSerializer.Deserialize<CddaEnergy>("\"1 MJ\"").Joules == 1000000m &&
+            JsonSerializer.Deserialize<CddaEnergy>("\"1 mJ\"").Joules == 0.001m,
+            "Mega- and milli-joules remain distinct");
+
+        var power = JsonSerializer.Deserialize<CddaPower>("\"2 kW\"");
+        Check(power.Watts == 2000m && power == CddaPower.FromWatts(2000m),
+            "Power units convert and compare by watts");
+        Check(JsonSerializer.Deserialize<CddaPower>("\"1 MW\"").Watts == 1000000m &&
+            JsonSerializer.Deserialize<CddaPower>("\"1 mW\"").Watts == 0.001m,
+            "Megawatts and milliwatts remain distinct");
+        Check(JsonSerializer.Serialize(power) == "\"2 kW\"",
+            "Power source spelling round-trips");
+        var noEnergyUnits = JsonSerializer.Deserialize<CddaEnergy>("5");
+        Check(!noEnergyUnits.HasExplicitUnit && noEnergyUnits.Joules is null &&
+            JsonSerializer.Serialize(noEnergyUnits) == "5",
+            "Unitless energy remains unitless");
+        var wrongDimension = false;
+        try { JsonSerializer.Deserialize<CddaEnergy>("\"5 W\""); }
+        catch (JsonException) { wrongDimension = true; }
+        Check(wrongDimension, "Wrong physical dimension is rejected");
+
+        var poweredItem = CddaRecordParser.Default.Parse(
+            """{"type":"ITEM","id":"powered","subtypes":["GUN"],"power_draw":"100 W","energy_drain":"2 kJ"}""")
+            as ItemDefinition;
+        Check(poweredItem?.PowerDraw?.Watts == 100m &&
+            poweredItem.GunData?.EnergyDrain?.Joules == 2000m,
+            "Electrical measurements are eagerly typed in item and gun data");
+
         Console.WriteLine("Typed measurement value tests passed.");
     }
 

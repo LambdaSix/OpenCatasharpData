@@ -45,7 +45,7 @@ internal static class WeaponSmoke
             gunData.BlackpowderTolerance == 56m,
             "Gun accuracy, recoil, skills and reliability");
         Check(gunData.ClipSize == 15 && gunData.Handling == 10 &&
-            gunData.EnergyDrain?.Text == "2 kJ" &&
+            gunData.EnergyDrain?.Joules == 2000m &&
             gunData.HeatPerShot == 10m &&
             gunData.CoolingValue == 3m &&
             gunData.OverheatThreshold == 100m &&
@@ -243,7 +243,7 @@ Check(ammoData.ExplodeInFire == true &&
             mod.AddMod[1].Name == "sights" &&
             mod.EnergyDrainMultiplier == 1.2m &&
             mod.EnergyDrainsMultiplier == 2.5m &&
-            mod.EnergyDrainModifier?.Text == "200 kJ" &&
+            mod.EnergyDrainModifier?.Joules == 200000m &&
             mod.FieldOfView == 270m &&
             mod.ShotSpreadMultiplierModifier == -0.8m &&
             mod.ReloadModifier == -10m,
