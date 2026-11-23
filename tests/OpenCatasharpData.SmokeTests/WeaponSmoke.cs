@@ -107,7 +107,7 @@ internal static class WeaponSmoke
             ammoData.Damage.ArmorPenetration == 2m &&
             ammoData.Damage.Barrels?[0].BarrelLength?.Millimetres == 28m &&
             ammoData.ShotDamage?.Amount == 10m &&
-            ammoData.ThrownDamage?.Amount == 7m,
+            ammoData.ThrownDamage?[0].Amount == 7m,
             "Ammo damage, shot damage and barrel curves");
         Check(ammoData.ProjectileCount == 3 &&
             ammoData.Dispersion == 20m &&

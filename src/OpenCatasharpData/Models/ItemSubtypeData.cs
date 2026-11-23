@@ -270,7 +270,8 @@ public sealed class AmmoData
     public CddaDamage? ShotDamage { get; set; }
 
     [JsonPropertyName("thrown_damage")]
-    public CddaDamage? ThrownDamage { get; set; }
+    [JsonConverter(typeof(CddaDamageListJsonConverter))]
+    public List<CddaDamage>? ThrownDamage { get; set; }
 
     [JsonPropertyName("projectile_count")]
     public int? ProjectileCount { get; set; }

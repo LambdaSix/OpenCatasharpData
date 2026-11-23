@@ -123,9 +123,16 @@ public sealed class CddaAmmoDispersionJsonConverter : JsonConverter<CddaAmmoDisp
     }
 }
 
-/// <summary>Optional shrapnel characteristics in a projectile/ammunition explosion.</summary>
+/// <summary>
+/// Optional shrapnel characteristics in an explosion. A bare JSON number
+/// (usually zero) is a documented legacy shorthand and is preserved.
+/// </summary>
+[JsonConverter(typeof(CddaShrapnelJsonConverter))]
 public sealed class CddaShrapnel
 {
+    [JsonIgnore]
+    public decimal? LegacyValue { get; internal set; }
+
     [JsonPropertyName("casing_mass")]
     public decimal? CasingMass { get; set; }
 
@@ -140,6 +147,61 @@ public sealed class CddaShrapnel
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
+
+/// <summary>Round-trips numeric or object-shaped explosion shrapnel.</summary>
+public sealed class CddaShrapnelJsonConverter : JsonConverter<CddaShrapnel>
+{
+    public override CddaShrapnel? Read(
+        ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var root = doc.RootElement;
+        if (root.ValueKind == JsonValueKind.Null) return null;
+        if (root.ValueKind == JsonValueKind.Number)
+            return new CddaShrapnel { LegacyValue = root.GetDecimal() };
+        if (root.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Expected shrapnel details or numeric shorthand.");
+
+        var result = new CddaShrapnel();
+        foreach (var prop in root.EnumerateObject())
+        {
+            switch (prop.Name)
+            {
+                case "casing_mass": result.CasingMass = prop.Value.GetDecimal(); break;
+                case "fragment_mass": result.FragmentMass = prop.Value.GetDecimal(); break;
+                case "recovery": result.Recovery = prop.Value.GetDecimal(); break;
+                case "drop": result.Drop = prop.Value.GetString(); break;
+                default:
+                    (result.AdditionalProperties ??= new())[prop.Name] = prop.Value.Clone();
+                    break;
+            }
+        }
+        return result;
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer, CddaShrapnel value, JsonSerializerOptions options)
+    {
+        if (value.LegacyValue is { } raw)
+        {
+            writer.WriteNumberValue(raw);
+            return;
+        }
+
+        writer.WriteStartObject();
+        if (value.CasingMass is { } casing) writer.WriteNumber("casing_mass", casing);
+        if (value.FragmentMass is { } fragment) writer.WriteNumber("fragment_mass", fragment);
+        if (value.Recovery is { } recovery) writer.WriteNumber("recovery", recovery);
+        if (value.Drop is not null) writer.WriteString("drop", value.Drop);
+        if (value.AdditionalProperties is not null)
+            foreach (var pair in value.AdditionalProperties)
+            {
+                writer.WritePropertyName(pair.Key);
+                pair.Value.WriteTo(writer);
+            }
+        writer.WriteEndObject();
+    }
 }
 
 /// <summary>Explosion produced by an ammunition item; unknown effect parameters remain intact.</summary>
