@@ -331,6 +331,22 @@ def report(stats, source_revision: str, model_revision: str):
     return "\n".join(lines)
 
 
+
+def require_coverage(stats, minimum_percent: float):
+    """Assert a minimum coverage percentage for the pinned source inventory."""
+    if not 0 <= minimum_percent <= 100:
+        raise ValueError("Minimum coverage must be between 0 and 100.")
+    total = stats["total_fields"]
+    percent = 100 * stats["mapped_fields"] / total if total else 0
+    if percent < minimum_percent:
+        fields = ", ".join(
+            f"{name} ({count})" for name, count in stats["unmodelled"].most_common(12)
+        )
+        raise ValueError(
+            f"Top-level item DTO coverage {percent:.2f}% is below the "
+            f"required {minimum_percent:.2f}%. Unmapped: {fields or 'none'}"
+        )
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, required=True)
@@ -338,6 +354,7 @@ def main():
     parser.add_argument("--source-revision", default="local")
     parser.add_argument("--model-revision", default="local")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--min-coverage", type=float, default=None)
     args = parser.parse_args()
     result = inventory(args.data_dir, dto_fields(args.model_dir))
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -345,6 +362,13 @@ def main():
     print(f"Scanned {result['files']} JSON files and {result['items']} ITEM records.")
     print(f"Typed field occurrences: {result['mapped_fields']}/{result['total_fields']}")
     print(f"Wrote {args.output}")
+    if args.min_coverage is not None:
+        try:
+            require_coverage(result, args.min_coverage)
+        except ValueError as error:
+            parser.exit(1, f"Coverage check failed: {error}\n")
+        print(f"Coverage gate met: >= {args.min_coverage:g}%")
+
 
 
 if __name__ == "__main__":

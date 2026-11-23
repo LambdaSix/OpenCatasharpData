@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from schema_coverage import dto_fields, inventory, remove_jsonc_extras, report
+from schema_coverage import dto_fields, inventory, remove_jsonc_extras, report, require_coverage
 
 
 class SchemaCoverageTests(unittest.TestCase):
@@ -40,6 +40,27 @@ class SchemaCoverageTests(unittest.TestCase):
             self.assertEqual(result["routing_counts"]["ARMOR+MAGAZINE"], 1)
             self.assertEqual(result["unmodelled"]["new_field"], 1)
             self.assertIn("Nested field gaps", report(result, "forksha", "modelsha"))
+
+
+    def test_coverage_gate_rejects_unknown_fields(self):
+        from collections import Counter
+        partial = {
+            "total_fields": 4,
+            "mapped_fields": 3,
+            "unmodelled": Counter({"unknown_field": 1}),
+        }
+        with self.assertRaisesRegex(ValueError, "unknown_field"):
+            require_coverage(partial, 100)
+        require_coverage(partial, 75)
+        with self.assertRaisesRegex(ValueError, "between 0 and 100"):
+            require_coverage(partial, 101)
+
+    def test_complete_coverage_gate_passes(self):
+        require_coverage({
+            "total_fields": 100,
+            "mapped_fields": 100,
+            "unmodelled": {},
+        }, 100)
 
 
 if __name__ == "__main__":
