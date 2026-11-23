@@ -225,6 +225,24 @@ public sealed class CddaArmorSection
     [JsonPropertyName("cover_vitals")]
     public decimal? CoverVitals { get; set; }
 
+    [JsonPropertyName("cover_melee")]
+    public decimal? MeleeCoverage { get; set; }
+
+    [JsonPropertyName("cover_ranged")]
+    public decimal? RangedCoverage { get; set; }
+
+    [JsonPropertyName("breathability")]
+    public string? Breathability { get; set; }
+
+    [JsonPropertyName("rigid_layer_only")]
+    public bool? RigidLayerOnly { get; set; }
+
+    [JsonPropertyName("volume_encumber_modifier")]
+    public decimal? VolumeEncumbranceModifier { get; set; }
+
+    [JsonPropertyName("activity_noise")]
+    public CddaActivityNoise? ActivityNoise { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
@@ -278,6 +296,54 @@ public sealed class CddaPocket
 
     [JsonPropertyName("ablative")]
     public bool? Ablative { get; set; }
+
+    [JsonPropertyName("default_magazine")]
+    public string? DefaultMagazine { get; set; }
+
+    [JsonPropertyName("open_container")]
+    public bool? OpenContainer { get; set; }
+
+    [JsonPropertyName("airtight")]
+    public bool? Airtight { get; set; }
+
+    [JsonPropertyName("min_item_length")]
+    public CddaLength? MinimumItemLength { get; set; }
+
+    [JsonPropertyName("min_item_volume")]
+    public CddaVolume? MinimumItemVolume { get; set; }
+
+    [JsonPropertyName("max_item_volume")]
+    public CddaVolume? MaximumItemVolume { get; set; }
+
+    [JsonPropertyName("extra_encumbrance")]
+    public decimal? ExtraEncumbrance { get; set; }
+
+    [JsonPropertyName("ripoff")]
+    public decimal? Ripoff { get; set; }
+
+    [JsonPropertyName("weight_multiplier")]
+    public decimal? WeightMultiplier { get; set; }
+
+    [JsonPropertyName("volume_multiplier")]
+    public decimal? VolumeMultiplier { get; set; }
+
+    [JsonPropertyName("spoil_multiplier")]
+    public decimal? SpoilMultiplier { get; set; }
+
+    [JsonPropertyName("inherits_flags")]
+    public bool? InheritsFlags { get; set; }
+
+    [JsonPropertyName("fire_protection")]
+    public bool? FireProtection { get; set; }
+
+    [JsonPropertyName("name")]
+    public CddaText? Name { get; set; }
+
+    [JsonPropertyName("sealed_data")]
+    public CddaPocketSealedData? SealedData { get; set; }
+
+    [JsonPropertyName("activity_noise")]
+    public CddaActivityNoise? ActivityNoise { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }

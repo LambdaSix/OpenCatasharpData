@@ -394,6 +394,7 @@ finally
 
 MeasurementSmoke.Run();
 CompositionSmoke.Run();
+ArmorSmoke.Run();
 await ResolutionSmoke.RunAsync();
 
 Console.WriteLine("OpenCatasharpData smoke tests passed.");

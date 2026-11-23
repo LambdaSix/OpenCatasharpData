@@ -29,6 +29,10 @@ public class RecordParsingBenchmarks
     [Benchmark]
     public CddaDefinition ParseArmor() => _parser.Parse(FixtureData.Armor);
 
+    // New workload: captures richer nested armour/pocket deserialization.
+    [Benchmark]
+    public CddaDefinition ParseArmorDetailed() => _parser.Parse(FixtureData.ArmorDetailed);
+
     [Benchmark]
     public CddaDefinition ParseGun() => _parser.Parse(FixtureData.Gun);
 

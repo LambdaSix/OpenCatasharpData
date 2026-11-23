@@ -142,6 +142,48 @@ Shared values use eager System.Text.Json converters:
 
 Other supported top-level DTOs remain: SkillDefinition, MaterialDefinition, ItemCategoryDefinition, AmmunitionTypeDefinition, RecipeDefinition and MonsterDefinition. Unknown definitions use UnknownDefinition.
 
+## Expanded armour and pocket DTOs
+
+Every ITEM declaring ARMOR exposes its eager `ArmorData` component alongside
+the item's shared `Armor` and `PocketData` lists. This works for composite
+items, including ARMOR+TOOL and ARMOR+BOOK, with no first-match data loss.
+
+~~~csharp
+var item = (ItemDefinition)CddaRecordParser.Default.Parse(json);
+
+bool? sided = item.ArmorData?.Sided;
+decimal? meleeCoverage = item.ArmorData?.Sections?[0].MeleeCoverage;
+decimal? rangedCoverage = item.ArmorData?.Sections?[0].RangedCoverage;
+string? layerBreathability = item.ArmorData?.Sections?[0].Breathability;
+
+decimal? maximumPocketLengthMm =
+    item.PocketData?[0].MaxItemLength?.Millimetres;
+decimal? minimumPocketVolumeMl =
+    item.PocketData?[0].MinimumItemVolume?.Millilitres;
+~~~
+
+ArmorData includes sided equipment, power-armour status, warmth, thickness,
+environmental protection, covered parts, overall/melee/ranged/vital coverage,
+encumbrance and maximum encumbrance, valid clothing modifications, maximum
+worn count, destroyed-item transformations and related damage descriptions.
+
+Each CddaArmorSection adds melee/ranged coverage, breathability, rigid-layer
+constraints, volume-based encumbrance modifiers and typed activity-noise
+volume/chance. CddaPocket adds magazine defaults, minimum lengths/volumes,
+maximum individual item volume, open/airtight/fire-protected pocket flags,
+ripoff and extra encumbrance values, multipliers, seal metadata and activity
+noise. Existing `CddaLength`, `CddaVolume` and `CddaMass` types are used
+for unit-bearing limits.
+
+**Source values are not game-calculated defaults.** Omitted fields remain
+nullable. Unknown nested keys are still retained through JsonExtensionData.
+The `energy_shield_max_hp` field is retained as a JsonElement because it can
+carry special shape semantics requiring separate modelling.
+
+The schema scan and pinned-CDDA deserialization probe run on every relevant
+change. BenchmarkDotNet includes a new ParseArmorDetailed scenario, without
+changing the input to the existing ParseArmor baseline.
+
 ## Typed physical measurements
 
 Dimension-aware value types replace unstructured CddaScalar values where the JSON schema defines physical units. They are readonly record structs with System.Text.Json converters and eager conversions. A duration's m suffix means **minutes**, while a length's m suffix means **metres**.
