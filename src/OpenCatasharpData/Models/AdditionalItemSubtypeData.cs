@@ -34,7 +34,7 @@ public sealed class SeedData
     public List<Dictionary<string, CddaDuration>>? GrowthStages { get; set; }
 
     [JsonPropertyName("growth_temp")]
-    public CddaScalar? GrowthTemperature { get; set; }
+    public CddaTemperature? GrowthTemperature { get; set; }
 
     [JsonPropertyName("required_terrain_flag")]
     public string? RequiredTerrainFlag { get; set; }
