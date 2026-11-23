@@ -1,231 +1,403 @@
 using System.Text.Json;
-using OpenCatasharpData.Models;
+using System.Text.Json.Serialization;
 
-namespace OpenCatasharpData.Parsing;
+namespace OpenCatasharpData.Models;
 
-/// <summary>A handler that matches and eagerly deserializes one kind of definition.</summary>
-public interface ICddaDefinitionHandler
+/// <summary>Typed components of an item's melee damage. Unknown damage types are preserved.</summary>
+public sealed class CddaMeleeDamage
 {
-    bool CanHandle(JsonElement record);
-    CddaDefinition Deserialize(JsonElement record);
+    [JsonPropertyName("bash")]
+    public decimal? Bash { get; set; }
+
+    [JsonPropertyName("cut")]
+    public decimal? Cut { get; set; }
+
+    [JsonPropertyName("stab")]
+    public decimal? Stab { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
+
+/// <summary>Either a legacy numeric to-hit bonus or its four-part modern description.</summary>
+[JsonConverter(typeof(CddaToHitJsonConverter))]
+public sealed class CddaToHit
+{
+    public decimal? LegacyBonus { get; set; }
+    public string? Grip { get; set; }
+    public string? Length { get; set; }
+    public string? Surface { get; set; }
+    public string? Balance { get; set; }
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
+
+public sealed class CddaToHitJsonConverter : JsonConverter<CddaToHit>
+{
+    public override CddaToHit? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var element = doc.RootElement;
+        if (element.ValueKind == JsonValueKind.Null) return null;
+        if (element.ValueKind == JsonValueKind.Number)
+            return new CddaToHit { LegacyBonus = element.GetDecimal() };
+        if (element.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Expected to_hit as a number or object.");
+
+        var value = new CddaToHit();
+        foreach (var field in element.EnumerateObject())
+        {
+            switch (field.Name)
+            {
+                case "grip": value.Grip = field.Value.GetString(); break;
+                case "length": value.Length = field.Value.GetString(); break;
+                case "surface": value.Surface = field.Value.GetString(); break;
+                case "balance": value.Balance = field.Value.GetString(); break;
+                default:
+                    (value.AdditionalProperties ??= new())[field.Name] = field.Value.Clone();
+                    break;
+            }
+        }
+        return value;
+    }
+
+    public override void Write(Utf8JsonWriter writer, CddaToHit value, JsonSerializerOptions options)
+    {
+        if (value.LegacyBonus is decimal legacy)
+        {
+            writer.WriteNumberValue(legacy);
+            return;
+        }
+        writer.WriteStartObject();
+        if (value.Grip is not null) writer.WriteString("grip", value.Grip);
+        if (value.Length is not null) writer.WriteString("length", value.Length);
+        if (value.Surface is not null) writer.WriteString("surface", value.Surface);
+        if (value.Balance is not null) writer.WriteString("balance", value.Balance);
+        if (value.AdditionalProperties is not null)
+            foreach (var field in value.AdditionalProperties)
+            {
+                writer.WritePropertyName(field.Key);
+                field.Value.WriteTo(writer);
+            }
+        writer.WriteEndObject();
+    }
+}
+
+/// <summary>One cosmetic variant, eagerly materialised from the source JSON.</summary>
+public sealed class CddaItemVariant
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("name")]
+    public CddaText? Name { get; set; }
+
+    [JsonPropertyName("description")]
+    public CddaText? Description { get; set; }
+
+    [JsonPropertyName("weight")]
+    public decimal? Weight { get; set; }
+
+    [JsonPropertyName("color")]
+    public string? Color { get; set; }
+
+    [JsonPropertyName("symbol")]
+    public string? Symbol { get; set; }
+
+    [JsonPropertyName("ascii_picture")]
+    public string? AsciiPicture { get; set; }
+
+    [JsonPropertyName("append")]
+    public bool? Append { get; set; }
+
+    [JsonPropertyName("expand_snippets")]
+    public bool? ExpandSnippets { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
+
+/// <summary>A typed action descriptor. Action-specific fields remain extensible.</summary>
+public sealed class CddaUseAction
+{
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("target")]
+    public string? Target { get; set; }
+
+    [JsonPropertyName("menu_text")]
+    public CddaText? MenuText { get; set; }
+
+    [JsonPropertyName("msg")]
+    public CddaText? Message { get; set; }
+
+    [JsonPropertyName("moves")]
+    public decimal? Moves { get; set; }
+
+    [JsonPropertyName("sound_volume")]
+    public int? SoundVolume { get; set; }
+
+    [JsonPropertyName("cable_length")]
+    public int? CableLength { get; set; }
+
+    [JsonPropertyName("charge_rate")]
+    public CddaScalar? ChargeRate { get; set; }
+
+    /// <summary>Numeric parameter of tuple-style actions such as ["CROWBAR", 0].</summary>
+    [JsonIgnore]
+    public decimal? NumericArgument { get; internal set; }
+
+    [JsonIgnore]
+    public bool WasTuple { get; internal set; }
+
+    [JsonIgnore]
+    public bool WasString { get; internal set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
 
 /// <summary>
-/// Reusable System.Text.Json handler; its match predicate is independent of the DTO.
-/// Register custom predicates/DTOs without changing the file or directory loaders.
+/// Accepts a single action string, a single action object or a mixed array.
+/// All known action fields are converted before returning the DTO.
 /// </summary>
-public sealed class JsonDefinitionHandler<TDefinition> : ICddaDefinitionHandler
-    where TDefinition : CddaDefinition
+public sealed class CddaUseActionsJsonConverter : JsonConverter<List<CddaUseAction>>
 {
-    private readonly Func<JsonElement, bool> _canHandle;
-    private readonly JsonSerializerOptions _options;
-
-    public JsonDefinitionHandler(Func<JsonElement, bool> canHandle, JsonSerializerOptions? options = null)
+    public override List<CddaUseAction>? Read(
+        ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        _canHandle = canHandle ?? throw new ArgumentNullException(nameof(canHandle));
-        _options = options ?? CddaRecordParser.JsonOptions;
-    }
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var root = doc.RootElement;
+        if (root.ValueKind == JsonValueKind.Null) return null;
 
-    public bool CanHandle(JsonElement record) => _canHandle(record);
-
-    public CddaDefinition Deserialize(JsonElement record) =>
-        record.Deserialize<TDefinition>(_options)
-        ?? throw new JsonException($"Could not deserialize {typeof(TDefinition).Name}.");
-}
-
-/// <summary>
-/// Single-record entry point. Each definition is deserialized exactly once,
-/// by the first matching handler. Unknown types use UnknownDefinition.
-/// </summary>
-public sealed class CddaRecordParser
-{
-    internal static readonly JsonDocumentOptions DocumentOptions = new()
-    {
-        AllowTrailingCommas = true,
-        CommentHandling = JsonCommentHandling.Skip
-    };
-
-    internal static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        AllowTrailingCommas = true,
-        ReadCommentHandling = JsonCommentHandling.Skip
-    };
-
-    private readonly IReadOnlyList<ICddaDefinitionHandler> _handlers;
-
-    public CddaRecordParser(IEnumerable<ICddaDefinitionHandler> handlers)
-    {
-        ArgumentNullException.ThrowIfNull(handlers);
-        _handlers = handlers.ToArray();
-    }
-
-    public static CddaRecordParser Default { get; } = new(CddaDefaultHandlers.Create());
-
-    public CddaDefinition Parse(string json)
-    {
-        ArgumentNullException.ThrowIfNull(json);
-        using var document = JsonDocument.Parse(json, DocumentOptions);
-        return Parse(document.RootElement);
-    }
-
-    public CddaDefinition Parse(ReadOnlySpan<byte> utf8Json)
-    {
-        using var document = JsonDocument.Parse(utf8Json.ToArray(), DocumentOptions);
-        return Parse(document.RootElement);
-    }
-
-    public CddaDefinition Parse(JsonElement record)
-    {
-        if (record.ValueKind != JsonValueKind.Object
-            || !record.TryGetProperty("type", out var type)
-            || type.ValueKind != JsonValueKind.String
-            || string.IsNullOrWhiteSpace(type.GetString()))
-            throw new JsonException("A CDDA definition must be an object with a string 'type'.");
-
-        CddaDefinition? definition = null;
-        foreach (var handler in _handlers)
+        var actions = new List<CddaUseAction>();
+        if (root.ValueKind == JsonValueKind.Array)
         {
-            if (!handler.CanHandle(record)) continue;
-            definition = handler.Deserialize(record);
-            break;
+            // Sometimes a tuple itself is the whole use_action value.
+            if (root.GetArrayLength() == 2 &&
+                root[0].ValueKind == JsonValueKind.String &&
+                root[1].ValueKind == JsonValueKind.Number)
+                actions.Add(ReadAction(root, options));
+            else
+                foreach (var element in root.EnumerateArray())
+                    actions.Add(ReadAction(element, options));
         }
+        else
+            actions.Add(ReadAction(root, options));
 
-        definition ??= record.Deserialize<UnknownDefinition>(JsonOptions)
-            ?? throw new JsonException("Could not deserialize unknown definition.");
+        return actions;
+    }
 
-        // Populate once, while JSON is being parsed, not on DTO property access.
-        if (record.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-            definition.IdString = id.GetString();
+    private static CddaUseAction ReadAction(JsonElement item, JsonSerializerOptions options) =>
+        item.ValueKind switch
+        {
+            JsonValueKind.String =>
+                new CddaUseAction { Type = item.GetString(), WasString = true },
+            JsonValueKind.Array when item.GetArrayLength() == 2 =>
+                new CddaUseAction
+                {
+                    Type = item[0].GetString(),
+                    NumericArgument = item[1].GetDecimal(),
+                    WasTuple = true
+                },
+            JsonValueKind.Object =>
+                item.Deserialize<CddaUseAction>(options)
+                ?? throw new JsonException("Invalid use action."),
+            _ => throw new JsonException("Expected a use_action string or object.")
+        };
 
-        return definition;
+    public override void Write(
+        Utf8JsonWriter writer, List<CddaUseAction> value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        foreach (var item in value)
+        {
+            if (item.WasString) writer.WriteStringValue(item.Type);
+            else if (item.WasTuple)
+            {
+                writer.WriteStartArray();
+                writer.WriteStringValue(item.Type);
+                writer.WriteNumberValue(item.NumericArgument ?? 0);
+                writer.WriteEndArray();
+            }
+            else JsonSerializer.Serialize(writer, item, options);
+        }
+        writer.WriteEndArray();
     }
 }
 
-/// <summary>
-/// One independently registered parser for an ITEM subtype. Implement this
-/// interface for a new slot without changing the file loader or record parser.
-/// </summary>
-public interface ICddaItemSubtypeHandler
+public sealed class CddaBarrelDamage
 {
-    string Subtype { get; }
-    void Attach(JsonElement record, ItemDefinition item);
+    [JsonPropertyName("barrel_length")]
+    public CddaLength? BarrelLength { get; set; }
+
+    [JsonPropertyName("amount")]
+    public decimal? Amount { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
 
-/// <summary>
-/// Deserialize an ITEM slot once, then attach its strongly typed result.
-/// Different handlers can coexist on the same item record.
-/// </summary>
-public sealed class JsonItemSubtypeHandler<TSlot> : ICddaItemSubtypeHandler where TSlot : class
+/// <summary>Projectile damage description, with a typed barrel-damage curve.</summary>
+public sealed class CddaDamage
 {
-    private readonly JsonSerializerOptions _options;
+    // Ranged damage may use the legacy numeric shorthand (e.g. "ranged_damage": 0).
+    [JsonIgnore]
+    public bool WasNumber { get; internal set; }
 
-    public JsonItemSubtypeHandler(string subtype, JsonSerializerOptions? options = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(subtype);
-        Subtype = subtype;
-        _options = options ?? CddaRecordParser.JsonOptions;
-    }
+    [JsonIgnore]
+    public bool WasSingleObject { get; internal set; }
 
-    public string Subtype { get; }
+    [JsonPropertyName("damage_type")]
+    public string? DamageType { get; set; }
 
-    public void Attach(JsonElement record, ItemDefinition item)
-    {
-        var slot = record.Deserialize<TSlot>(_options)
-            ?? throw new JsonException($"Could not deserialize ITEM subtype {Subtype}.");
-        item.SetSubtype(slot);
-        if (slot is ArmorData armor)
-            armor.Sections = item.Armor;
-        if (slot is GunData gun)
-        {
-            gun.RangedDamage = item.RangedDamage;
-            gun.BarrelLength = item.BarrelLength;
-        }
-        if (slot is AmmoData ammo) ammo.AmmoTypes = item.AmmoTypes;
-        if (slot is MagazineData magazine) magazine.AmmoTypes = item.AmmoTypes;
-        if (slot is GunModData gunMod) gunMod.BarrelLength = item.BarrelLength;
-    }
+    [JsonPropertyName("amount")]
+    public decimal? Amount { get; set; }
+
+    [JsonPropertyName("armor_penetration")]
+    public decimal? ArmorPenetration { get; set; }
+
+    [JsonPropertyName("damage_multiplier")]
+    public decimal? DamageMultiplier { get; set; }
+
+    [JsonPropertyName("barrels")]
+    public List<CddaBarrelDamage>? Barrels { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
 
-/// <summary>Handle all ITEM subtypes as composable, eager components.</summary>
-public sealed class CddaItemCompositionHandler : ICddaDefinitionHandler
+/// <summary>Reads ranged_damage as either one damage object or an array of them.</summary>
+public sealed class CddaDamageListJsonConverter : JsonConverter<List<CddaDamage>>
 {
-    private readonly Dictionary<string, ICddaItemSubtypeHandler> _handlers;
-    private readonly JsonSerializerOptions _options;
-
-    public CddaItemCompositionHandler(
-        IEnumerable<ICddaItemSubtypeHandler> handlers, JsonSerializerOptions? options = null)
+    public override List<CddaDamage>? Read(
+        ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(handlers);
-        _handlers = new Dictionary<string, ICddaItemSubtypeHandler>(StringComparer.OrdinalIgnoreCase);
-        foreach (var handler in handlers)
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind == JsonValueKind.Null) return null;
+        var result = new List<CddaDamage>();
+        if (root.ValueKind == JsonValueKind.Array)
         {
-            if (!_handlers.TryAdd(handler.Subtype, handler))
-                throw new ArgumentException($"Duplicate ITEM subtype handler: {handler.Subtype}");
+            foreach (var entry in root.EnumerateArray())
+                result.Add(entry.Deserialize<CddaDamage>(options)
+                    ?? throw new JsonException("Invalid ranged damage entry."));
         }
-        _options = options ?? CddaRecordParser.JsonOptions;
+        else if (root.ValueKind == JsonValueKind.Object)
+        {
+            var value = root.Deserialize<CddaDamage>(options)
+                ?? throw new JsonException("Invalid ranged damage.");
+            value.WasSingleObject = true;
+            result.Add(value);
+        }
+        else if (root.ValueKind == JsonValueKind.Number)
+            result.Add(new CddaDamage { Amount = root.GetDecimal(), WasNumber = true });
+        else throw new JsonException("Expected ranged_damage as a number, object or array.");
+        return result;
     }
 
-    public bool CanHandle(JsonElement record) =>
-        CddaDefaultHandlers.TypeIs(record, "ITEM") ||
-        CddaDefaultHandlers.TypeIs(record, "GENERIC") ||
-        CddaDefaultHandlers.TypeIs(record, "BATTERY") ||
-        _handlers.Keys.Any(subtype => CddaDefaultHandlers.TypeIs(record, subtype));
-
-    public CddaDefinition Deserialize(JsonElement record)
+    public override void Write(Utf8JsonWriter writer, List<CddaDamage> value, JsonSerializerOptions options)
     {
-        var item = record.Deserialize<ItemDefinition>(_options)
-            ?? throw new JsonException("Invalid ITEM definition.");
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        // Historical ITEM type discriminators can designate a subtype directly.
-        if (_handlers.TryGetValue(item.Type, out var direct))
-        {
-            direct.Attach(record, item);
-            seen.Add(direct.Subtype);
-        }
-
-        // Critically, every declared subtype is attached, not just the first.
-        foreach (var subtype in item.Subtypes ?? [])
-        {
-            if (!seen.Add(subtype)) continue;
-            if (_handlers.TryGetValue(subtype, out var handler))
-                handler.Attach(record, item);
-        }
-
-        return item;
+        if (value.Count == 1 && value[0].WasNumber && value[0].Amount is { } amount)
+            writer.WriteNumberValue(amount);
+        else if (value.Count == 1 && value[0].WasSingleObject)
+            JsonSerializer.Serialize(writer, value[0], options);
+        else
+            JsonSerializer.Serialize(writer, value, options);
     }
 }
 
-/// <summary>Built-in record and subtype parser registries.</summary>
-public static class CddaDefaultHandlers
+/// <summary>One tuple of gun mode ID, display label, shots, and optional flag.</summary>
+[JsonConverter(typeof(CddaGunModeJsonConverter))]
+public sealed class CddaGunMode
 {
-    public static IReadOnlyList<ICddaItemSubtypeHandler> CreateItemSubtypeHandlers() =>
-    [
-        new JsonItemSubtypeHandler<ArmorData>("ARMOR"),
-        new JsonItemSubtypeHandler<ComestibleData>("COMESTIBLE"),
-        new JsonItemSubtypeHandler<ToolData>("TOOL"),
-        new JsonItemSubtypeHandler<GunData>("GUN"),
-        new JsonItemSubtypeHandler<AmmoData>("AMMO"),
-        new JsonItemSubtypeHandler<MagazineData>("MAGAZINE"),
-        new JsonItemSubtypeHandler<BookData>("BOOK"),
-        new JsonItemSubtypeHandler<GunModData>("GUNMOD")
-    ];
+    public string Id { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public int Shots { get; set; }
+    public string? Flag { get; set; }
+    public List<string>? Flags { get; set; }
+    public List<JsonElement>? ExtraValues { get; set; }
+}
 
-    public static IReadOnlyList<ICddaDefinitionHandler> Create(
-        IEnumerable<ICddaItemSubtypeHandler>? itemHandlers = null) =>
-    [
-        new CddaItemCompositionHandler(itemHandlers ?? CreateItemSubtypeHandlers()),
-        new JsonDefinitionHandler<SkillDefinition>(record => TypeIs(record, "skill")),
-        new JsonDefinitionHandler<MaterialDefinition>(record => TypeIs(record, "material")),
-        new JsonDefinitionHandler<ItemCategoryDefinition>(record => TypeIs(record, "ITEM_CATEGORY")),
-        new JsonDefinitionHandler<AmmunitionTypeDefinition>(record => TypeIs(record, "ammunition_type")),
-        new JsonDefinitionHandler<RecipeDefinition>(record => TypeIs(record, "recipe")),
-        new JsonDefinitionHandler<MonsterDefinition>(record => TypeIs(record, "MONSTER"))
-    ];
+public sealed class CddaGunModeJsonConverter : JsonConverter<CddaGunMode>
+{
+    public override CddaGunMode? Read(
+        ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var array = doc.RootElement;
+        if (array.ValueKind == JsonValueKind.Null) return null;
+        if (array.ValueKind != JsonValueKind.Array || array.GetArrayLength() < 3)
+            throw new JsonException("Gun mode must be [id, label, shots, optional flag].");
 
-    public static bool TypeIs(JsonElement record, string type) =>
-        record.ValueKind == JsonValueKind.Object
-        && record.TryGetProperty("type", out var value)
-        && value.ValueKind == JsonValueKind.String
-        && string.Equals(value.GetString(), type, StringComparison.OrdinalIgnoreCase);
+        var result = new CddaGunMode
+        {
+            Id = array[0].GetString()!,
+            Label = array[1].GetString()!,
+            Shots = array[2].GetInt32(),
+            Flag = array.GetArrayLength() > 3 && array[3].ValueKind == JsonValueKind.String
+                ? array[3].GetString() : null,
+            Flags = array.GetArrayLength() > 3 && array[3].ValueKind == JsonValueKind.Array
+                ? array[3].EnumerateArray().Select(flag =>
+                    flag.ValueKind == JsonValueKind.String
+                        ? flag.GetString()!
+                        : throw new JsonException("Gun mode flags must be strings.")).ToList()
+                : null
+        };
+        if (array.GetArrayLength() > 4)
+            result.ExtraValues = array.EnumerateArray().Skip(4).Select(e => e.Clone()).ToList();
+        return result;
+    }
+
+    public override void Write(Utf8JsonWriter writer, CddaGunMode value, JsonSerializerOptions options)
+    {
+        writer.WriteStartArray();
+        writer.WriteStringValue(value.Id);
+        writer.WriteStringValue(value.Label);
+        writer.WriteNumberValue(value.Shots);
+        if (value.Flags is not null) JsonSerializer.Serialize(writer, value.Flags, options);
+        else if (value.Flag is not null) writer.WriteStringValue(value.Flag);
+        if (value.ExtraValues is not null)
+            foreach (var item in value.ExtraValues) item.WriteTo(writer);
+        writer.WriteEndArray();
+    }
+}
+
+public sealed class CddaConditionalName
+{
+    [JsonPropertyName("type")]
+    public string? Type { get; set; }
+
+    [JsonPropertyName("condition")]
+    public string? Condition { get; set; }
+
+    [JsonPropertyName("name")]
+    public CddaText? Name { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
+
+public sealed class CddaFault
+{
+    [JsonPropertyName("weight")]
+    public decimal? Weight { get; set; }
+
+    [JsonPropertyName("weight_override")]
+    public decimal? WeightOverride { get; set; }
+
+    [JsonPropertyName("weight_add")]
+    public decimal? WeightAdd { get; set; }
+
+    [JsonPropertyName("weight_mult")]
+    public decimal? WeightMultiplier { get; set; }
+
+    [JsonPropertyName("fault")]
+    public string? Fault { get; set; }
+
+    [JsonPropertyName("fault_group")]
+    public string? FaultGroup { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
