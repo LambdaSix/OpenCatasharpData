@@ -39,6 +39,20 @@ public class RecordParsingBenchmarks
     [Benchmark]
     public CddaDefinition ParseMagazine() => _parser.Parse(FixtureData.Magazine);
 
+    [Benchmark]
+    public CddaDefinition ParseGunDetailed() => _parser.Parse(FixtureData.GunDetailed);
+
+    [Benchmark]
+    public CddaDefinition ParseAmmoDetailed() => _parser.Parse(FixtureData.AmmoDetailed);
+
+    [Benchmark]
+    public CddaDefinition ParseGunModDetailed() => _parser.Parse(FixtureData.GunModDetailed);
+
+    [Benchmark]
+    public CddaDefinition ParseAmmoEffect() => _parser.Parse(FixtureData.AmmoEffect);
+
+
+
     // Separately measures handler dispatch / DTO deserialization without
     // re-parsing the JSON text into a DOM each time.
     [Benchmark]

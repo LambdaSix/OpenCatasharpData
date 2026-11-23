@@ -139,6 +139,58 @@ internal static class FixtureData
         }
         """;
 
+    /// <summary>Deep weapon DTO workloads; legacy benchmark fixtures stay unchanged.</summary>
+    public const string GunDetailed = """
+        {
+          "type":"ITEM","id":"detailed_gun","subtypes":["GUN"],
+          "skill":"pistol","ammo":["9mm"],"dispersion":480,
+          "recoil":130,"sight_dispersion":60,"min_cycle_recoil":140,
+          "gun_jam_mult":1.25,"heat_per_shot":10,
+          "energy_drain":"2 kJ","barrel_volume":"30 mL",
+          "firing_requirements":{"DEFAULT":[{"pocket":"ammo","qty":1},
+                                            {"pocket":"battery","qty":5}]},
+          "modes":[["DEFAULT","semi-auto",1],["VOLLEY","volley",3,["VOLLEY"]]],
+          "valid_mod_locations":[["barrel",1],["sights",1]],
+          "barrel_length":"102 mm","ranged_damage":0
+        }
+        """;
+
+    public const string AmmoDetailed = """
+        {
+          "type":"ITEM","id":"detailed_ammo","subtypes":["AMMO"],
+          "ammo_type":"223","count":30,"stack_size":47,
+          "damage":{"damage_type":"bullet","amount":39,"armor_penetration":2,
+                    "barrels":[{"barrel_length":"28 mm","amount":13}]},
+          "dispersion_modifier":[{"barrel_length":"337 mm","dispersion":30}],
+          "shot_damage":{"damage_type":"bullet","amount":10},
+          "projectile_count":2,"recovery_chance":75,
+          "explosion":{"power":20,"shrapnel":0}
+        }
+        """;
+
+    public const string GunModDetailed = """
+        {
+          "type":"ITEM","id":"detailed_gunmod","subtypes":["GUNMOD"],
+          "location":"stock","mod_targets":["crossbow"],
+          "install_time":"30 s",
+          "magazine_adaptor":[["223",["stanag30","stanag40"]]],
+          "consumption_mods":[{"pocket":"power","multiply":0.5}],
+          "capacity_mods":[{"pocket":"ammo","multiply":1.5}],
+          "mode_modifier":[["AUTO","auto",4,["VOLLEY"]]],
+          "mode_firing_requirements":{"AUTO":[{"pocket":"ammo","qty":3}]},
+          "overheat_threshold_modifier":10,"is_bayonet":true
+        }
+        """;
+
+    public const string AmmoEffect = """
+        {
+          "type":"ammo_effect","id":"detailed_effect","trigger_chance":25,
+          "aoe":[{"field_type":"fd_fog","intensity_min":1,"radius":5}],
+          "trail":[{"field_type":"fd_smoke","intensity_min":1,"chance":50}],
+          "explosion":{"power":200,"shrapnel":{"casing_mass":10,"fragment_mass":0.5}}
+        }
+        """;
+
     public static readonly string[] Records =
         [Generic, Comestible, Armor, Gun, Ammo, Magazine, Tool, Book, GunMod];
 
