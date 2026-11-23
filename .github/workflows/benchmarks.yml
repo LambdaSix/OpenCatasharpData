@@ -1,0 +1,92 @@
+name: Benchmark regression
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "benchmarks/**"
+      - "OpenCatasharpData.slnx"
+      - ".github/workflows/benchmarks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Test benchmark result comparison
+        run: python3 -m unittest discover -s benchmarks/scripts -p "test_*.py"
+
+      - name: Build benchmark harness
+        run: dotnet build benchmarks/OpenCatasharpData.Benchmarks -c Release
+
+      - name: Prepare PR base benchmark source
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          if git cat-file -e "$BASE_SHA:benchmarks/OpenCatasharpData.Benchmarks/OpenCatasharpData.Benchmarks.csproj" 2>/dev/null; then
+            git worktree add --detach "$RUNNER_TEMP/baseline-source" "$BASE_SHA"
+            echo "HAS_BENCHMARK_BASELINE=true" >> "$GITHUB_ENV"
+          else
+            echo "HAS_BENCHMARK_BASELINE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Measure PR base (same runner)
+        if: github.event_name == 'pull_request' && env.HAS_BENCHMARK_BASELINE == 'true'
+        shell: bash
+        env:
+          PROJECT: benchmarks/OpenCatasharpData.Benchmarks/OpenCatasharpData.Benchmarks.csproj
+        run: |
+          cd "$RUNNER_TEMP/baseline-source"
+          dotnet run --project "$PROJECT" -c Release -- \
+            --job Short --filter '*' --artifacts "$RUNNER_TEMP/baseline-data"
+
+      - name: Measure candidate
+        shell: bash
+        run: |
+          dotnet run --project benchmarks/OpenCatasharpData.Benchmarks -c Release -- \
+            --job Short --filter '*' --artifacts "$RUNNER_TEMP/current-data"
+
+      - name: Compare candidate with base
+        if: github.event_name == 'pull_request' && env.HAS_BENCHMARK_BASELINE == 'true'
+        shell: bash
+        run: |
+          python3 benchmarks/scripts/compare_benchmarks.py \
+            --baseline "$RUNNER_TEMP/baseline-data/results" \
+            --current "$RUNNER_TEMP/current-data/results" \
+            --time-threshold 25 \
+            --allocation-threshold 25 \
+            --fail-on-regression \
+            --markdown "$GITHUB_STEP_SUMMARY"
+
+      - name: Write initial reference report
+        if: github.event_name != 'pull_request' || env.HAS_BENCHMARK_BASELINE != 'true'
+        shell: bash
+        run: |
+          python3 benchmarks/scripts/compare_benchmarks.py \
+            --current "$RUNNER_TEMP/current-data/results" \
+            --markdown "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload raw benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/baseline-data/results/
+            ${{ runner.temp }}/current-data/results/
+          retention-days: 90

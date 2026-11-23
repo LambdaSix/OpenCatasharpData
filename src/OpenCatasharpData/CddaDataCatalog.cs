@@ -54,6 +54,16 @@ public sealed class CddaDataCatalog
         return Entries.Select(entry => entry.Definition).OfType<TDefinition>().ToArray();
     }
 
+    /// <summary>
+    /// All items carrying a parsed subtype component (including composite items).
+    /// No additional JSON parsing occurs during the query.
+    /// </summary>
+    public IReadOnlyList<ItemDefinition> GetItemsWith<TSlot>() where TSlot : class =>
+        Entries.Select(entry => entry.Definition)
+            .OfType<ItemDefinition>()
+            .Where(item => item.GetSubtype<TSlot>() is not null)
+            .ToArray();
+
     /// <summary>All definitions of this ID, including duplicates or mod patches.</summary>
     public IReadOnlyList<LoadedDefinition> FindById(string id)
     {

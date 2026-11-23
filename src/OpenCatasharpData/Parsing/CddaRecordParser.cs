@@ -101,27 +101,112 @@ public sealed class CddaRecordParser
     }
 }
 
-/// <summary>Built-in routing rules. CDDA uses type=ITEM with a subtypes array.</summary>
+/// <summary>
+/// One independently registered parser for an ITEM subtype. Implement this
+/// interface for a new slot without changing the file loader or record parser.
+/// </summary>
+public interface ICddaItemSubtypeHandler
+{
+    string Subtype { get; }
+    void Attach(JsonElement record, ItemDefinition item);
+}
+
+/// <summary>
+/// Deserialize an ITEM slot once, then attach its strongly typed result.
+/// Different handlers can coexist on the same item record.
+/// </summary>
+public sealed class JsonItemSubtypeHandler<TSlot> : ICddaItemSubtypeHandler where TSlot : class
+{
+    private readonly JsonSerializerOptions _options;
+
+    public JsonItemSubtypeHandler(string subtype, JsonSerializerOptions? options = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(subtype);
+        Subtype = subtype;
+        _options = options ?? CddaRecordParser.JsonOptions;
+    }
+
+    public string Subtype { get; }
+
+    public void Attach(JsonElement record, ItemDefinition item)
+    {
+        var slot = record.Deserialize<TSlot>(_options)
+            ?? throw new JsonException($"Could not deserialize ITEM subtype {Subtype}.");
+        item.SetSubtype(slot);
+        if (slot is ArmorData armor)
+            armor.Sections = item.Armor;
+    }
+}
+
+/// <summary>Handle all ITEM subtypes as composable, eager components.</summary>
+public sealed class CddaItemCompositionHandler : ICddaDefinitionHandler
+{
+    private readonly Dictionary<string, ICddaItemSubtypeHandler> _handlers;
+    private readonly JsonSerializerOptions _options;
+
+    public CddaItemCompositionHandler(
+        IEnumerable<ICddaItemSubtypeHandler> handlers, JsonSerializerOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(handlers);
+        _handlers = new Dictionary<string, ICddaItemSubtypeHandler>(StringComparer.OrdinalIgnoreCase);
+        foreach (var handler in handlers)
+        {
+            if (!_handlers.TryAdd(handler.Subtype, handler))
+                throw new ArgumentException($"Duplicate ITEM subtype handler: {handler.Subtype}");
+        }
+        _options = options ?? CddaRecordParser.JsonOptions;
+    }
+
+    public bool CanHandle(JsonElement record) =>
+        CddaDefaultHandlers.TypeIs(record, "ITEM") ||
+        CddaDefaultHandlers.TypeIs(record, "GENERIC") ||
+        CddaDefaultHandlers.TypeIs(record, "BATTERY") ||
+        _handlers.Keys.Any(subtype => CddaDefaultHandlers.TypeIs(record, subtype));
+
+    public CddaDefinition Deserialize(JsonElement record)
+    {
+        var item = record.Deserialize<ItemDefinition>(_options)
+            ?? throw new JsonException("Invalid ITEM definition.");
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Historical ITEM type discriminators can designate a subtype directly.
+        if (_handlers.TryGetValue(item.Type, out var direct))
+        {
+            direct.Attach(record, item);
+            seen.Add(direct.Subtype);
+        }
+
+        // Critically, every declared subtype is attached, not just the first.
+        foreach (var subtype in item.Subtypes ?? [])
+        {
+            if (!seen.Add(subtype)) continue;
+            if (_handlers.TryGetValue(subtype, out var handler))
+                handler.Attach(record, item);
+        }
+
+        return item;
+    }
+}
+
+/// <summary>Built-in record and subtype parser registries.</summary>
 public static class CddaDefaultHandlers
 {
-    private static readonly HashSet<string> KnownItemSubtypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "ARMOR", "COMESTIBLE", "TOOL", "GUN", "AMMO",
-        "MAGAZINE", "BOOK", "GUNMOD"
-    };
-
-    public static IReadOnlyList<ICddaDefinitionHandler> Create() =>
+    public static IReadOnlyList<ICddaItemSubtypeHandler> CreateItemSubtypeHandlers() =>
     [
-        new JsonDefinitionHandler<ArmorItemDefinition>(record => Item(record, "ARMOR")),
-        new JsonDefinitionHandler<ComestibleItemDefinition>(record => Item(record, "COMESTIBLE")),
-        new JsonDefinitionHandler<ToolItemDefinition>(record => Item(record, "TOOL")),
-        new JsonDefinitionHandler<GunItemDefinition>(record => Item(record, "GUN")),
-        new JsonDefinitionHandler<AmmoItemDefinition>(record => Item(record, "AMMO")),
-        new JsonDefinitionHandler<MagazineItemDefinition>(record => Item(record, "MAGAZINE")),
-        new JsonDefinitionHandler<BookItemDefinition>(record => Item(record, "BOOK")),
-        new JsonDefinitionHandler<GunModItemDefinition>(record => Item(record, "GUNMOD")),
-        new JsonDefinitionHandler<GenericItemDefinition>(record =>
-            TypeIs(record, "ITEM") || TypeIs(record, "GENERIC") || TypeIs(record, "BATTERY")),
+        new JsonItemSubtypeHandler<ArmorData>("ARMOR"),
+        new JsonItemSubtypeHandler<ComestibleData>("COMESTIBLE"),
+        new JsonItemSubtypeHandler<ToolData>("TOOL"),
+        new JsonItemSubtypeHandler<GunData>("GUN"),
+        new JsonItemSubtypeHandler<AmmoData>("AMMO"),
+        new JsonItemSubtypeHandler<MagazineData>("MAGAZINE"),
+        new JsonItemSubtypeHandler<BookData>("BOOK"),
+        new JsonItemSubtypeHandler<GunModData>("GUNMOD")
+    ];
+
+    public static IReadOnlyList<ICddaDefinitionHandler> Create(
+        IEnumerable<ICddaItemSubtypeHandler>? itemHandlers = null) =>
+    [
+        new CddaItemCompositionHandler(itemHandlers ?? CreateItemSubtypeHandlers()),
         new JsonDefinitionHandler<SkillDefinition>(record => TypeIs(record, "skill")),
         new JsonDefinitionHandler<MaterialDefinition>(record => TypeIs(record, "material")),
         new JsonDefinitionHandler<ItemCategoryDefinition>(record => TypeIs(record, "ITEM_CATEGORY")),
@@ -135,23 +220,4 @@ public static class CddaDefaultHandlers
         && record.TryGetProperty("type", out var value)
         && value.ValueKind == JsonValueKind.String
         && string.Equals(value.GetString(), type, StringComparison.OrdinalIgnoreCase);
-
-    private static bool Item(JsonElement record, string subtype)
-    {
-        if (TypeIs(record, subtype)) return true;
-        if (!TypeIs(record, "ITEM")
-            || !record.TryGetProperty("subtypes", out var subtypes)
-            || subtypes.ValueKind != JsonValueKind.Array) return false;
-
-        // First recognised subtype wins, reflecting the declared order.
-        foreach (var value in subtypes.EnumerateArray())
-        {
-            if (value.ValueKind != JsonValueKind.String) continue;
-            var declared = value.GetString();
-            if (declared is null || !KnownItemSubtypes.Contains(declared)) continue;
-            return string.Equals(declared, subtype, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 }
