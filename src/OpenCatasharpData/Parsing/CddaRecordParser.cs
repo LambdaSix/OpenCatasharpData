@@ -140,7 +140,13 @@ public sealed class JsonItemSubtypeHandler<TSlot> : ICddaItemSubtypeHandler wher
             gun.RangedDamage = item.RangedDamage;
             gun.BarrelLength = item.BarrelLength;
         }
-        if (slot is AmmoData ammo) ammo.AmmoTypes = item.AmmoTypes;
+        if (slot is AmmoData ammo)
+        {
+            ammo.AmmoTypes = item.AmmoTypes;
+            ammo.ThrownDamage = item.ThrownDamage;
+            ammo.ExplodeInFire = item.ExplodeInFire;
+            ammo.Explosion = item.Explosion;
+        }
         if (slot is MagazineData magazine) magazine.AmmoTypes = item.AmmoTypes;
         if (slot is GunModData gunMod) gunMod.BarrelLength = item.BarrelLength;
     }

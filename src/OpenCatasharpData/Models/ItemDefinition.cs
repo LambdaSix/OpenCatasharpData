@@ -93,6 +93,17 @@ public sealed class ItemDefinition : CddaDefinition
     [JsonConverter(typeof(CddaDamageListJsonConverter))]
     public List<CddaDamage>? RangedDamage { get; set; }
 
+    // Thrown weapons and explosive effects are shared across ITEM subtypes.
+    [JsonPropertyName("thrown_damage")]
+    [JsonConverter(typeof(CddaDamageListJsonConverter))]
+    public List<CddaDamage>? ThrownDamage { get; set; }
+
+    [JsonPropertyName("explode_in_fire")]
+    public bool? ExplodeInFire { get; set; }
+
+    [JsonPropertyName("explosion")]
+    public CddaExplosion? Explosion { get; set; }
+
     [JsonPropertyName("weapon_category")]
     public List<string>? WeaponCategories { get; set; }
 

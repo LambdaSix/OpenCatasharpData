@@ -62,6 +62,7 @@ internal static class WeaponSmoke
             "Firing modes can carry optional arrays of flags");
         Check(JsonSerializer.Serialize(gunData.Modes![1]).Contains("[\"VOLLEY\"]"),
             "Array-form mode flags round-trip");
+        Check(gunData.AmmoEffects is null, "Optional gun ammo-effect IDs remain nullable");
         Check(gunData.ReloadTime == 200 &&
             gunData.ReloadNoise?.Singular == "Ping!" &&
             gunData.ReloadNoiseVolume == 4m &&
@@ -127,7 +128,21 @@ internal static class WeaponSmoke
             ammoData.StackSize == 47 &&
             ammoData.Casing == "223_casing",
             "Ammo consumption and performance values");
-        Check(ammoData.ExplodeInFire == true &&
+                // Shared thrown-damage and explosive data are also typed for
+        // generic items without an AMMO subtype.
+        var thrownGeneric = (ItemDefinition)CddaRecordParser.Default.Parse(
+            """
+            {"type":"ITEM","id":"generic_throwing_rock",
+             "thrown_damage":[{"damage_type":"bash","amount":7}],
+             "explode_in_fire":true,"explosion":{"power":42,"shrapnel":0}}
+            """);
+        Check(thrownGeneric.ThrownDamage?[0].Amount == 7m &&
+            thrownGeneric.ExplodeInFire == true &&
+            thrownGeneric.Explosion?.Power == 42m &&
+            thrownGeneric.Explosion.Shrapnel?.LegacyValue == 0m,
+            "Thrown and explosive data on a generic ITEM");
+
+Check(ammoData.ExplodeInFire == true &&
             ammoData.Explosion?.Power == 42m &&
             ammoData.Explosion.Shrapnel?.FragmentMass == 1.5m &&
             ammoData.Explosion.AdditionalProperties?["custom_explosion"].GetBoolean() == true,

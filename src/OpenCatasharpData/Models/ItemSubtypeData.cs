@@ -240,6 +240,9 @@ public sealed class GunData
     [JsonPropertyName("reload_noise_volume")]
     public decimal? ReloadNoiseVolume { get; set; }
 
+    [JsonPropertyName("ammo_effects")]
+    public List<string>? AmmoEffects { get; set; }
+
     [JsonPropertyName("built_in_mods")]
     public List<string>? BuiltInMods { get; set; }
 
@@ -269,9 +272,8 @@ public sealed class AmmoData
     [JsonPropertyName("shot_damage")]
     public CddaDamage? ShotDamage { get; set; }
 
-    [JsonPropertyName("thrown_damage")]
-    [JsonConverter(typeof(CddaDamageListJsonConverter))]
-    public List<CddaDamage>? ThrownDamage { get; set; }
+    [JsonIgnore]
+    public List<CddaDamage>? ThrownDamage { get; internal set; }
 
     [JsonPropertyName("projectile_count")]
     public int? ProjectileCount { get; set; }
@@ -318,11 +320,11 @@ public sealed class AmmoData
     [JsonPropertyName("casing")]
     public string? Casing { get; set; }
 
-    [JsonPropertyName("explode_in_fire")]
-    public bool? ExplodeInFire { get; set; }
+    [JsonIgnore]
+    public bool? ExplodeInFire { get; internal set; }
 
-    [JsonPropertyName("explosion")]
-    public CddaExplosion? Explosion { get; set; }
+    [JsonIgnore]
+    public CddaExplosion? Explosion { get; internal set; }
 }
 
 /// <summary>Magazine capacity, default loading and jam characteristics.</summary>
